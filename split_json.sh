@@ -1,27 +1,31 @@
 #!/bin/bash
 # Script to split nested JSON into individual files
 
-# Get the input file
-INPUT_FILE="raechel_gold_images/ground_truth_sroie_v5.json"
-OUTPUT_DIR="raechel_gold_images/ground_truth"
+# Get the input file with absolute path
+INPUT_FILE="data/sroie/ground_truth_sroie_v5.json"
+OUTPUT_DIR="data/sroie/ground_truth"
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
-# Get the number of entries in the JSON file
-NUM_ENTRIES=$(jq 'length' "$INPUT_FILE")
-echo "Found $NUM_ENTRIES entries in $INPUT_FILE"
+# Get the image files to match against
+IMAGE_FILES=($(ls -1 data/sroie/images/sroie_test_*.jpg | sort))
+echo "Found ${#IMAGE_FILES[@]} image files in data/sroie/images/"
 
-# Extract each entry and save to a separate file
-for i in $(seq 0 $((NUM_ENTRIES-1))); do
-  # Format number with leading zeros
-  padded_i=$(printf "%03d" $i)
+# Extract each entry and save to a file matching the image filename pattern
+for image_path in "${IMAGE_FILES[@]}"; do
+  # Extract the image filename without path or extension
+  image_file=$(basename "$image_path")
+  image_name="${image_file%.*}"
   
-  # Extract the JSON for this entry
-  jq -r ".[\"$i\"]" "$INPUT_FILE" > "$OUTPUT_DIR/sroie_test_${padded_i}.json"
+  # Extract image index from filename (e.g., "sroie_test_033" -> "33")
+  image_index=$(echo "$image_name" | sed -E 's/sroie_test_0*([0-9]+)/\1/')
+  
+  # Extract the JSON for this entry using the actual image index
+  jq -r ".[\"$image_index\"]" "$INPUT_FILE" > "$OUTPUT_DIR/${image_name}.json"
   
   # Print a message
-  echo "Created $OUTPUT_DIR/sroie_test_${padded_i}.json"
+  echo "Created $OUTPUT_DIR/${image_name}.json from JSON index $image_index"
 done
 
-echo "Done! All JSON files have been created in $OUTPUT_DIR"
+echo "Done! All JSON files have been created in $OUTPUT_DIR matching image filenames"

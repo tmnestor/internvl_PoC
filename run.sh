@@ -85,7 +85,7 @@ if [[ "$RUNTIME_ENV" == "remote" ]]; then
     export INTERNVL_MODEL_PATH="/home/jovyan/nfs_share/models/huggingface/hub/InternVL2_5-1B"
     export INTERNVL_DATA_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data"
     export INTERNVL_OUTPUT_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/output"
-    export INTERNVL_IMAGE_FOLDER_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images"
+    export INTERNVL_IMAGE_FOLDER_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images"
     export INTERNVL_PROMPTS_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/prompts.yaml"
     
     echo "Remote environment variables now active:"

@@ -167,11 +167,11 @@ class PathManager:
     
     def get_synthetic_ground_truth_path(self) -> Path:
         """Get path to the synthetic ground truth directory."""
-        return self.get_synthetic_data_path() / "test" / "ground_truth"
+        return self.get_synthetic_data_path() / "ground_truth"
     
     def get_synthetic_images_path(self) -> Path:
         """Get path to the synthetic images directory."""
-        return self.get_synthetic_data_path() / "test" / "images"
+        return self.get_synthetic_data_path() / "images"
 
 # Create singleton instance of PathManager
 # We use a try/except to make the imports safer during development/testing

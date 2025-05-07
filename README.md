@@ -20,20 +20,75 @@ InternVL Evaluation processes images to extract structured data fields like date
 
 ## Installation
 
-### Using Conda
+### Setting Up Conda Environment on Multi-User Linux Systems
+
+For multi-user Linux systems, it's important to set up isolated environments that don't interfere with other users while efficiently managing resources:
+
+#### 1. Initial Setup (One-Time)
 
 ```bash
 # Clone the repository
 git clone https://github.com/your-organization/internvl-evaluation.git
 cd internvl-evaluation
 
-# Create and activate the environment
-conda env create -f environment.yml
-conda activate internvl_env
+# Set up conda to use a user-specific environment directory
+# This avoids permission issues in shared environments
+mkdir -p ~/conda_envs
+conda config --append envs_dirs ~/conda_envs
 
-# Create a .env file in the project root with required configuration
-# All paths must be absolute, not relative
+# Create the environment with a specific name for this project
+# The --prefix option ensures it's created in your user directory
+conda env create -f environment.yml --prefix ~/conda_envs/internvl_env
+
+# Activate the environment
+conda activate ~/conda_envs/internvl_env
 ```
+
+#### 2. Subsequent Activations
+
+```bash
+# Activate the environment in future sessions
+conda activate ~/conda_envs/internvl_env
+```
+
+#### 3. Environment Configuration
+
+```bash
+# Create a user-specific .env file
+cp .env.example .env
+
+# Edit the .env file with your specific paths
+# All paths must be absolute, not relative
+nano .env
+```
+
+#### 4. Handling Shared GPU Resources
+
+If your system has GPUs that are shared among users:
+
+```bash
+# Check GPU availability and usage
+nvidia-smi
+
+# If needed, specify a particular GPU to use
+export CUDA_VISIBLE_DEVICES=0  # Use only GPU 0
+```
+
+#### 5. Environment Cleanup (When Needed)
+
+```bash
+# Deactivate first
+conda deactivate
+
+# Remove the environment when no longer needed
+conda remove --prefix ~/conda_envs/internvl_env --all
+```
+
+This approach provides several advantages for multi-user systems:
+- Each user maintains their own isolated environment
+- Avoids permission issues with system-wide conda installations
+- Prevents conflicts between different users' package requirements
+- Allows for easier cleanup when the environment is no longer needed
 
 ### Configuration
 
@@ -100,11 +155,11 @@ chmod +x run.sh
 # Process multiple images
 ./run.sh batch --image-folder-path /path/to/images
 
-# Generate test predictions
-./run.sh predict --test-image-dir /path/to/test/images --output-dir /path/to/predictions
+# Generate predictions
+./run.sh predict --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
 
 # Evaluate extraction results
-./run.sh evaluate --predictions-dir /path/to/predictions --ground-truth-dir /path/to/ground_truth
+./run.sh evaluate --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
 ```
 
 #### Local vs Remote Execution
@@ -143,11 +198,11 @@ python -m src.scripts.internvl_single --image-path /path/to/image.jpg
 # Process multiple images
 python -m src.scripts.internvl_batch --image-folder-path /path/to/images
 
-# Generate test predictions
-python -m src.scripts.generate_predictions --test-image-dir /path/to/test/images --output-dir /path/to/predictions
+# Generate predictions
+python -m src.scripts.generate_predictions --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
 
 # Evaluate extraction results
-python -m src.scripts.evaluate_extraction --predictions-dir /path/to/predictions --ground-truth-dir /path/to/ground_truth
+python -m src.scripts.evaluate_extraction --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
 ```
 
 The `-m` flag tells Python to run the module as a script, which ensures proper imports and package structure.
@@ -196,11 +251,17 @@ internvl-evaluation/
 │       ├── internvl_batch.py        # Process batch of images
 │       ├── generate_predictions.py  # Generate predictions
 │       └── evaluate_extraction.py   # Evaluate results
+├── data/                 # Data directories
+│   └── synthetic/        # Synthetic data for testing
+│       ├── ground_truth/ # Ground truth JSON files
+│       └── images/       # Receipt images for testing
+├── output/               # Output directory for results
 ├── tests/                # Unit tests
 ├── environment.yml       # Conda environment specification
 ├── prompts.yaml          # Prompt templates for model extraction tasks
 ├── run.sh                # Helper script for running commands
 ├── RUNNING.md            # Documentation for running commands
+├── SHARED_COMPUTE.md     # Guide for running on shared compute resources
 ├── SETUP_INSTRUCTIONS.md # Setup instructions
 └── README.md             # This file
 ```
@@ -212,9 +273,9 @@ internvl-evaluation/
 ```bash
 # Remote execution examples (with remote paths)
 ./run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
-./run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images
-./run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/ground_truth
+./run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images
+./run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
 ```
 
 ## SROIE Dataset Evaluation

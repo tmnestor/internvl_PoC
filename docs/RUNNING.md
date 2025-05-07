@@ -69,7 +69,9 @@ The `run.sh` script provides a more convenient and managed approach:
 
 For both approaches, the following environment setup is required:
 
-1. Conda environment with Python 3.11:
+### Single-User Environment
+
+1. Standard Conda environment setup:
    ```bash
    conda env create -f environment.yml
    conda activate internvl_env
@@ -80,6 +82,47 @@ For both approaches, the following environment setup is required:
    INTERNVL_DATA_PATH=/path/to/data
    INTERNVL_OUTPUT_PATH=/path/to/output
    INTERNVL_MODEL_PATH=/path/to/model
+   ```
+
+### Multi-User Environment Setup
+
+For shared Linux systems where multiple users run the code:
+
+1. User-specific Conda environment:
+   ```bash
+   # Create a user-specific conda environments directory
+   mkdir -p ~/conda_envs
+   conda config --append envs_dirs ~/conda_envs
+   
+   # Create the environment in user space
+   conda env create -f environment.yml --prefix ~/conda_envs/internvl_env
+   conda activate ~/conda_envs/internvl_env
+   ```
+
+2. User-specific .env file:
+   ```bash
+   # Copy the example .env file
+   cp .env.example .env
+   
+   # Edit with user-specific paths
+   nano .env
+   ```
+
+3. GPU management for shared resources:
+   ```bash
+   # Check GPU availability and usage
+   nvidia-smi
+   
+   # Limit execution to specific GPUs if needed
+   export CUDA_VISIBLE_DEVICES=0,1  # Use only GPUs 0 and 1
+   ```
+   
+4. Running jobs with resource management:
+   ```bash
+   # For longer jobs, consider using nohup or tmux/screen
+   nohup ./run.sh --remote batch --image-folder-path /path/to/images > batch_log.txt 2>&1 &
+   
+   # Or use a proper job scheduler like SLURM if available
    ```
 
 ## Choosing the Right Approach

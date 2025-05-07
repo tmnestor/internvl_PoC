@@ -58,8 +58,8 @@ cd /Users/tod/Desktop/internvl_synthetic/data/generators
 
 # Generate sample receipts
 python receipt_generator.py \
-  --output_dir ../synthetic/test/images \
-  --metadata_output ../synthetic/test/metadata \
+  --output_dir ../synthetic/images \
+  --metadata_output ../synthetic/metadata \
   --num_receipts 10 \
   --australian \
   --include_gst
@@ -79,8 +79,8 @@ Sample command for quick test:
 ```bash
 # Generate one sample receipt for testing
 python /Users/tod/Desktop/internvl_synthetic/data/generators/receipt_generator.py \
-  --output_dir /Users/tod/Desktop/internvl_synthetic/data/synthetic/test/images \
-  --metadata_output /Users/tod/Desktop/internvl_synthetic/data/synthetic/test/metadata \
+  --output_dir /Users/tod/Desktop/internvl_synthetic/data/synthetic/images \
+  --metadata_output /Users/tod/Desktop/internvl_synthetic/data/synthetic/metadata \
   --num_receipts 1 \
   --australian \
   --include_gst
