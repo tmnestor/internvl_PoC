@@ -1,0 +1,605 @@
+{
+    "0": {
+        "prod_item_value": [
+            "BESI Y 12 (CQ)",
+            "BESI R 5.5 (CQ)"
+        ],
+        "date_value": "16/03/2018",
+        "total_value": "135.68",
+        "prod_quantity_value": [
+            "4",
+            "4"
+        ],
+        "tax_value": "7.68",
+        "prod_price_value": [
+            "101.76",
+            "33.92"
+        ],
+        "store_name_value": "KEDAI PAPAN YEW CHUAN"
+    },
+    "1": {
+        "prod_item_value": "Fuel Save 95",
+        "date_value": "05/04/18",
+        "total_value": "95.48",
+        "prod_quantity_value": "43.40 litre",
+        "tax_value": [],
+        "prod_price_value": "95.48",
+        "store_name_value": "HIGH FIVE ENTERPRISE"
+    },
+    "3": {
+        "prod_item_value": [
+            "SAKURA WALNUT B",
+            "GRAIN & SEEDS B"
+        ],
+        "date_value": "17/06/2018",
+        "total_value": [
+            "8.96",
+            "8.95"
+        ],
+        "prod_quantity_value": [
+            "1",
+            "1"
+        ],
+        "tax_value": "0",
+        "prod_price_value": [
+            "2.83",
+            "6.13"
+        ],
+        "store_name_value": "AEON CO. (M) BHD"
+    },
+    "4": {
+        "prod_item_value": "RESTAURANT ORDER CHIT NCR 3.5\"x6\"",
+        "date_value": "14/10/2017",
+        "total_value": "8.70",
+        "prod_quantity_value": "3",
+        "tax_value": "0.49",
+        "prod_price_value": "8.70",
+        "store_name_value": [
+            "SANYU STATIONERY SHOP",
+            "SANYU SUPPLY SDN BHD"
+        ]
+    },
+    "6": {
+        "prod_item_value": [
+            "Teh (B)",
+            "Cham (B)",
+            "Take Away"
+        ],
+        "date_value": "10-05-2018",
+        "total_value": "7.2",
+        "prod_quantity_value": [
+            "2",
+            "1",
+            "3"
+        ],
+        "tax_value": "0.39",
+        "prod_price_value": [
+            "4.40",
+            "2.20",
+            "0.60"
+        ],
+        "store_name_value": "RESTORAN WAN SHENG"
+    },
+    "7": {
+        "prod_item_value": [
+            "QL CLASSIC EGGS",
+            "WHITE GARLIC",
+            "OLD GINGER",
+            "CHIC DRUMSTICK",
+            "CHIC DRUMSTICK",
+            "DEER SESAME OI"
+        ],
+        "date_value": "12/04/2018",
+        "total_value": [
+            "24.11",
+            "24.10"
+        ],
+        "prod_quantity_value": [
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "0.52",
+        "prod_price_value": [
+            "4.60",
+            "0.88",
+            "0.48",
+            "5.50",
+            "3.55",
+            "9.10"
+        ],
+        "store_name_value": "AEON CO. (M) BHD"
+    },
+    "8": {
+        "prod_item_value": "SCHNEIDER E15R 13A SWITCH SOCKET OUTLET",
+        "date_value": "29/01/2018",
+        "total_value": [
+            "6.36",
+            "6.35"
+        ],
+        "prod_quantity_value": "1",
+        "tax_value": "0.36",
+        "prod_price_value": "6.36",
+        "store_name_value": "CROSS CHANNEL NETWORK SDN. BHD."
+    },
+    "9": {
+        "prod_item_value": "WONG AH LEK KAYA (PAND",
+        "date_value": "08-06-16",
+        "total_value": [
+            "2.11",
+            "2.10"
+        ],
+        "prod_quantity_value": [],
+        "tax_value": ".12",
+        "prod_price_value": "2.11",
+        "store_name_value": "99 SPEED MART"
+    },
+    "10": {
+        "prod_item_value": [
+            "PASIR HALUS (D)",
+            "KAPUR AIR (A1)"
+        ],
+        "date_value": "07/03/2018",
+        "total_value": "91.16",
+        "prod_quantity_value": [
+            "1",
+            "7"
+        ],
+        "tax_value": "5.16",
+        "prod_price_value": [
+            "68.90",
+            "22.26"
+        ],
+        "store_name_value": "KEDAI PAPAN YEW CHUAN"
+    },
+    "11": {
+        "prod_item_value": [
+            "Special TG Tower 01",
+            "Iced Cafe Latte"
+        ],
+        "date_value": "6/4/2018",
+        "total_value": "98.00",
+        "prod_quantity_value": [
+            "1",
+            "1"
+        ],
+        "tax_value": "5.54",
+        "prod_price_value": [
+            "75.47",
+            "8.58"
+        ],
+        "store_name_value": "The GeoVenture (Freedom Optimum Sdn Bhd)"
+    },
+    "12": {
+        "prod_item_value": [
+            "Dole Pineapple Pcs",
+            "Farmhouse Fresh Milk Twin Pack 2×1L \t",
+            "Fresh Cut Honey kfruit Peeled 400g",
+            "Nestle Bliss Yog Drink Strawberry 700g",
+            "Vitagen Assorted 5×125ml"
+        ],
+        "date_value": "08/03/18",
+        "total_value": "81.00",
+        "prod_quantity_value": [
+            "3",
+            "1",
+            "3",
+            "1",
+            "1"
+        ],
+        "tax_value": "1.74",
+        "prod_price_value": [
+            "23.70",
+            "19.90",
+            "26.70",
+            "5.80",
+            "4.90"
+        ],
+        "store_name_value": [
+            "B.I.G",
+            "Ben's Independent Grocer",
+            "BENS INDEPENDENT GROCER SDN. BHD"
+        ]
+    },
+    "13": {
+        "prod_item_value": [
+            "Stir Fried Yam, Xs",
+            "Lor Mee, XS",
+            "Chrysanthemum Tea, Iced"
+        ],
+        "date_value": "12/10/2017",
+        "total_value": "36.96",
+        "prod_quantity_value": [
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "2.09",
+        "prod_price_value": [
+            "12.90",
+            "13.90",
+            "4.90"
+        ],
+        "store_name_value": "Pu Tien (M) SDN BHD"
+    },
+    "14": {
+        "prod_item_value": "I00100000061- 5 Vege",
+        "date_value": "20 Mar 2018",
+        "total_value": "6.60",
+        "prod_quantity_value": "1",
+        "tax_value": "0.37",
+        "prod_price_value": "6.60",
+        "store_name_value": "UNIHAKKA INTERNATIONAL SDN BHD"
+    },
+    "15": {
+        "prod_item_value": [
+            "(MY) EDV Meal",
+            "6\" -Meatball Sub",
+            "16oz Fountain Drink",
+            "1 Cookies"
+        ],
+        "date_value": "14/02/2018",
+        "total_value": "11.90",
+        "prod_quantity_value": "1",
+        "tax_value": "0.67",
+        "prod_price_value": "11.90",
+        "store_name_value": [
+            "Subway",
+            "URBAN IDEA SDN BHD"
+        ]
+    },
+    "16": {
+        "prod_item_value": [
+            "H/COVER F/SCAP BOOK 300PGS",
+            "TACK-IT 120pcs F/CASTELL 75GMS",
+            "NOTE BOOK SPIRAL 202 CROWN",
+            "DEAL074#5 REAMS IK PLUS Simili Paper A4 80"
+        ],
+        "date_value": "13-11-2017",
+        "total_value": "270.10",
+        "prod_quantity_value": [
+            "3",
+            "1",
+            "2",
+            "4"
+        ],
+        "tax_value": "15.28",
+        "prod_price_value": [
+            "21.60",
+            "5.70",
+            "2.80",
+            "240.00"
+        ],
+        "store_name_value": [
+            "BECON STATIONER",
+            "Becon Enterprise Sdn Bhd"
+        ]
+    },
+    "17": {
+        "prod_item_value": [
+            "O.C. WHITE",
+            "WHOLEMEAL",
+            "O. C JUMBO",
+            "CR-B'SCOTCH",
+            "BUN-SBILIS"
+        ],
+        "date_value": "14/09/2017",
+        "total_value": "25.84",
+        "prod_quantity_value": [
+            "3",
+            "3",
+            "1",
+            "-1",
+            "10"
+        ],
+        "tax_value": "0.46",
+        "prod_price_value": [
+            "6.39",
+            "8.34",
+            "2.97",
+            "-0.72",
+            "8.40"
+        ],
+        "store_name_value": [
+            "GARDENIA BAKERIES (KL) SDN BHD",
+            "MAKASSAR FRESH MARKET SON BHD"
+        ]
+    },
+    "18": {
+        "prod_item_value": [
+            "B01 - MUSHROOM BR",
+            "001 - SIZZLING PO",
+            "003 - BLACK SUGAR",
+            "P05 - BROWN SUGAR"
+        ],
+        "date_value": "19/04/2018",
+        "total_value": "46.25",
+        "prod_quantity_value": [
+            "1",
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "2.62",
+        "prod_price_value": [
+            "12.90",
+            "13.90",
+            "11.90",
+            "4.95"
+        ],
+        "store_name_value": "CHA FOR TEA"
+    },
+    "19": {
+        "prod_item_value": [
+            "KO NABE INANIWA UDON",
+            "GREEN TEA",
+            "GYOZA 5pcs",
+            "GARLIC CHAHAN"
+        ],
+        "date_value": "20/03/2018",
+        "total_value": "53.00",
+        "prod_quantity_value": [
+            "1",
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "3.00",
+        "prod_price_value": [
+            "24.00",
+            "1.00",
+            "15.00",
+            "6.00"
+        ],
+        "store_name_value": "UROKO JAPANESE CUISINE SDN BHD"
+    },
+    "20": {
+        "prod_item_value": [
+            "ON ENVOLOPE 4X9 WINDOW 20.S",
+            "SEASONSHARD COVER BOOK",
+            "RWT HARDCOVER FOOLSCAP 300,S",
+            "SHARPIE FINE PERMANENT MARKER",
+            "SHARPIE FINE PERMANENT MARKER"
+        ],
+        "date_value": "15/09/2017",
+        "total_value": "48.00",
+        "prod_quantity_value": [
+            "3",
+            "3",
+            "1",
+            "3",
+            "3"
+        ],
+        "tax_value": "2.72",
+        "prod_price_value": [
+            "10.18",
+            "12.08",
+            "8.37",
+            "8.68",
+            "8.68"
+        ],
+        "store_name_value": "KEDAI BUKU NEW ACHEIVERS"
+    },
+    "21": {
+        "prod_item_value": "KINGS SAFETY SHOES",
+        "date_value": "02/01/2019",
+        "total_value": "170.00",
+        "prod_quantity_value": "1",
+        "tax_value": [],
+        "prod_price_value": "170.00",
+        "store_name_value": [
+            "tan chay yee",
+            "OJC MARKETING SDN BH"
+        ]
+    },
+    "22": {
+        "prod_item_value": "CLR P.S A4/A3",
+        "date_value": "26-02-2018",
+        "total_value": "7.42",
+        "prod_quantity_value": "1",
+        "tax_value": "0.42",
+        "prod_price_value": "7.42",
+        "store_name_value": "WESTERN EASTERN STATIONERY SDN. BHD"
+    },
+    "24": {
+        "prod_item_value": [
+            "SN2 Soup Pan Mee",
+            "ST8",
+            "SN8 Sp Nod Special",
+            "WC1 (C) WC",
+            "VA9 French Fries Bkt"
+        ],
+        "date_value": "03 Jun 18",
+        "total_value": "28.02",
+        "prod_quantity_value": [
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "0.00",
+        "prod_price_value": [
+            "10.90",
+            "12.97",
+            "4.15"
+        ],
+        "store_name_value": [
+            "OLD TOWN WHITE COFFE",
+            "EXQUISITE GARDEN SON BHD"
+        ]
+    },
+    "25": {
+        "prod_item_value": [
+            "T-Dark Seed Grain Bread",
+            "T-Green Tea Mochi",
+            "T-Honey Walnut",
+            "T-Saha Bread"
+        ],
+        "date_value": "07/06/2018",
+        "total_value": "15.00",
+        "prod_quantity_value": [
+            "1",
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "0.00",
+        "prod_price_value": [
+            "4.15",
+            "3.30",
+            "3.70",
+            "4.60"
+        ],
+        "store_name_value": "MOONLIGHT CAKE HOUSE SDN BHD"
+    },
+    "26": {
+        "prod_item_value": [
+            "Vege",
+            "Fried Noodle"
+        ],
+        "date_value": "25 Mar 2018",
+        "total_value": "8.50",
+        "prod_quantity_value": [
+            "1",
+            "1"
+        ],
+        "tax_value": "0.48",
+        "prod_price_value": [
+            "5.50",
+            "3.00"
+        ],
+        "store_name_value": "UNIHAKKA INTERNATIONAL SDN BHD"
+    },
+    "27": {
+        "prod_item_value": [
+            "ST30",
+            "BR10 Stm Ginger R",
+            "1",
+            "HS4",
+            "SN5 Curry Mee",
+            "TF7 (C) Lemon T"
+        ],
+        "date_value": "22 Mar 18",
+        "total_value": [
+            "30.24",
+            "30.25"
+        ],
+        "prod_quantity_value": [
+            "13.87",
+            "1"
+        ],
+        "tax_value": "1.71",
+        "prod_price_value": [
+            "TF2 (H) Teh Tarik",
+            "12.07"
+        ],
+        "store_name_value": [
+            "OLDTOWN WHITE COFFEE",
+            "Old Town Kopitiam Sdn Bhd"
+        ]
+    },
+    "28": {
+        "prod_item_value": [
+            "YE36 BK 12W WW LED TRACK LIGHT",
+            "YE44 35W WW BK TRACK HOLDER",
+            "1METER TRACK-BK"
+        ],
+        "date_value": "20/11/2017",
+        "total_value": "278.80",
+        "prod_quantity_value": [
+            "2",
+            "1",
+            "1"
+        ],
+        "tax_value": "15.78",
+        "prod_price_value": [
+            "90.57",
+            "155.66",
+            "16.79"
+        ],
+        "store_name_value": "LIGHTROOM GALLERY SDN BHD"
+    },
+    "29": {
+        "prod_item_value": [
+            "(W33) 105MM/4' CUTTING DISC",
+            "4\" MAGIC SAND PAPER",
+            "104 COTTON GLOVE (DOZEN)"
+        ],
+        "date_value": "31/01/2018",
+        "total_value": "101.76",
+        "prod_quantity_value": [
+            "2",
+            "10",
+            "1"
+        ],
+        "tax_value": "5.76",
+        "prod_price_value": [
+            "59.36",
+            "31.80",
+            "10.60"
+        ],
+        "store_name_value": "SYARIKAT PERNIAGAAN GIN KEE"
+    },
+    "31": {
+        "prod_item_value": [
+            "PLACEMAT 30*45CM",
+            "COLANDER",
+            "PLACEMAT",
+            "MOUSE PAD",
+            "ANTI SLIP MAT 820# 30*50CM",
+            "ANTI SLIP MAT 820# 45*100CM",
+            "SHOWER CAP SET",
+            "PLACEMAT 30*45CM"
+        ],
+        "date_value": "10-01-16",
+        "total_value": "59.20",
+        "prod_quantity_value": [
+            "4",
+            "2",
+            "3",
+            "1",
+            "3",
+            "1",
+            "1",
+            "1"
+        ],
+        "tax_value": "3.35",
+        "prod_price_value": [
+            "14",
+            "11.80",
+            "5.70",
+            "3.30",
+            "8.10",
+            "7.50",
+            "6.50",
+            "2.30"
+        ],
+        "store_name_value": "MR. D.I.Y. (M) SDN BHD"
+    },
+    "32": {
+        "prod_item_value": [
+            "PEANUT C. CRC200G",
+            "TARO C. CRAC 200G"
+        ],
+        "date_value": "02-12-2016",
+        "total_value": "15.80",
+        "prod_quantity_value": [],
+        "tax_value": "0.89",
+        "prod_price_value": [
+            "7.90",
+            "7.90"
+        ],
+        "store_name_value": "GUDANG HASIL RESTAURANT SDN BHD"
+    },
+    "33": {
+        "prod_item_value": "PROSMK 10W LED STICK",
+        "date_value": "18/09/2017",
+        "total_value": "26.00",
+        "prod_quantity_value": "2",
+        "tax_value": "1.47",
+        "prod_price_value": "24.52",
+        "store_name_value": "EVERGREEN LIGHT SON BHD"
+    }
+}
