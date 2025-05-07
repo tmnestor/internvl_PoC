@@ -33,22 +33,22 @@ cd internvl_PoC
 
 # Set up conda to use a user-specific environment directory
 # This avoids permission issues in shared environments
-mkdir -p ~/conda_envs
-conda config --append envs_dirs ~/conda_envs
+mkdir -p ~/.conda/envs
+conda config --append envs_dirs ~/.conda/envs
 
 # Create the environment with a specific name for this project
 # The --prefix option ensures it's created in your user directory
-conda env create -f internvl_env.yml --prefix ~/conda_envs/internvl_env
+conda env create -f internvl_env.yml --prefix ~/.conda/envs/internvl_env
 
 # Activate the environment
-conda activate ~/conda_envs/internvl_env
+conda activate ~/.conda/envs/internvl_env
 ```
 
 #### 2. Subsequent Activations
 
 ```bash
 # Activate the environment in future sessions
-conda activate ~/conda_envs/internvl_env
+conda activate ~/.conda/envs/internvl_env
 ```
 
 #### 3. Environment Configuration
@@ -81,7 +81,7 @@ export CUDA_VISIBLE_DEVICES=0  # Use only GPU 0
 conda deactivate
 
 # Remove the environment when no longer needed
-conda remove --prefix ~/conda_envs/internvl_env --all
+conda remove --prefix ~/.conda/envs/internvl_env --all
 ```
 
 This approach provides several advantages for multi-user systems:
