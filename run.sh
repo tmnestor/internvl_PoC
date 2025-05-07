@@ -36,6 +36,22 @@ done
 
 echo "Running in $RUNTIME_ENV environment mode"
 
+# Override environment variables for remote execution
+if [[ "$RUNTIME_ENV" == "remote" ]]; then
+    # Override with remote paths
+    echo "Setting remote environment variables (overriding .env file values)..."
+    export INTERNVL_PATH="/home/jovyan/nfs_share/tod/internvl_PoC"
+    export INTERNVL_MODEL_PATH="/home/jovyan/nfs_share/models/huggingface/hub/InternVL2_5-1B"
+    echo "  INTERNVL_PATH=$INTERNVL_PATH"
+    echo "  INTERNVL_MODEL_PATH=$INTERNVL_MODEL_PATH"
+    
+    # You can add more remote-specific environment variables here as needed
+    # For example:
+    # export INTERNVL_DATA_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data"
+    # export INTERNVL_OUTPUT_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/output"
+    # etc.
+fi
+
 # Function to validate required environment variables
 validate_env() {
     local missing_vars=()
@@ -106,15 +122,20 @@ fi
 validate_path() {
     local path_type=$1
     local path=$2
+    local validation_only=${3:-false}
     
     # Skip validation for non-path variables
     if [[ $path != /* ]]; then
         # For model path this could be a HuggingFace ID
         if [[ $path_type == "MODEL_PATH" && $path != *"/"* ]]; then
-            echo "Using HuggingFace model: $path"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "Using HuggingFace model: $path"
+            fi
             return 0
         fi
-        echo "INFO: $path_type does not appear to be a path"
+        if [[ "$validation_only" == "false" ]]; then
+            echo "INFO: $path_type does not appear to be a path"
+        fi
         return 0
     fi
     
@@ -122,31 +143,43 @@ validate_path() {
     if [[ "$RUNTIME_ENV" == "local" ]]; then
         # For local environment, check if the path exists on the local filesystem
         if [[ $path == /home/jovyan/* ]]; then
-            echo "WARNING: Remote path detected in local environment for $path_type: $path"
-            echo "You may need to edit the .env file to set the correct local path"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "WARNING: Remote path detected in local environment for $path_type: $path"
+                echo "You may need to edit the .env file to set the correct local path"
+            fi
             return 1
         elif [ ! -d "$path" ] && [ ! -f "$path" ]; then
-            echo "WARNING: Path for $path_type not found at $path"
-            echo "You may need to:"
-            echo "  1. Edit the .env file to set the correct path"
-            echo "  2. Create the directory or file at the specified location"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "WARNING: Path for $path_type not found at $path"
+                echo "You may need to:"
+                echo "  1. Edit the .env file to set the correct path"
+                echo "  2. Create the directory or file at the specified location"
+            fi
             return 1
         else
-            echo "Using local path for $path_type: $path"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "Using local path for $path_type: $path"
+            fi
             return 0
         fi
     elif [[ "$RUNTIME_ENV" == "remote" ]]; then
         # For remote environment, expect paths to be on the remote server
         if [[ $path == /home/jovyan/* ]]; then
-            echo "Using remote path for $path_type: $path"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "Using remote path for $path_type: $path"
+            fi
             return 0
         elif [[ $path == /Users/* ]]; then
-            echo "WARNING: Local path detected in remote environment for $path_type: $path"
-            echo "You may need to edit the .env file to set the correct remote path"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "WARNING: Local path detected in remote environment for $path_type: $path"
+                echo "You may need to edit the .env file to set the correct remote path"
+            fi
             return 1
         else
-            echo "Using path for $path_type: $path"
-            echo "Note: Path will be validated during runtime on the remote server"
+            if [[ "$validation_only" == "false" ]]; then
+                echo "Using path for $path_type: $path"
+                echo "Note: Path will be validated during runtime on the remote server"
+            fi
             return 0
         fi
     fi
@@ -178,10 +211,17 @@ for path_type in "${paths_to_validate[@]}"; do
         path_type="PROJECT_PATH"
     fi
     
-    # Get path from .env file - only get active (non-commented) lines
-    # Use awk to properly handle the whole value after the equals sign including spaces
-    # And only take the first match in case of multiple definitions
-    path_value=$(grep "^${env_var}=" "${PROJECT_DIR}/.env" | head -n 1 | awk -F "=" '{print $2}')
+    # First check if the env var has been overridden in the environment
+    path_value="${!env_var}"
+    
+    # If not set in environment, get from .env file (only active, non-commented lines)
+    if [[ -z "$path_value" ]]; then
+        # Use awk to properly handle the whole value after the equals sign including spaces
+        # And only take the first match in case of multiple definitions
+        path_value=$(grep "^${env_var}=" "${PROJECT_DIR}/.env" | head -n 1 | awk -F "=" '{print $2}')
+    else
+        echo "Using environment value for $env_var: $path_value"
+    fi
     
     if [[ ! -z "$path_value" ]]; then
         validate_path "$path_type" "$path_value"
@@ -230,6 +270,29 @@ for arg in "$@"; do
     fi
 done
 set -- "${NEW_ARGS[@]}"  # Replace original arguments with filtered ones
+
+# Print summary of key environment variables
+echo ""
+echo "============================================================"
+echo "ENVIRONMENT SUMMARY"
+echo "============================================================"
+echo "Environment Mode: $RUNTIME_ENV"
+echo ""
+echo "Key Paths (these will be used during execution):"
+echo "  INTERNVL_PATH             = $INTERNVL_PATH"
+echo "  INTERNVL_MODEL_PATH       = $INTERNVL_MODEL_PATH"
+echo "  INTERNVL_DATA_PATH        = $INTERNVL_DATA_PATH"
+echo "  INTERNVL_OUTPUT_PATH      = $INTERNVL_OUTPUT_PATH"
+echo "  INTERNVL_IMAGE_FOLDER_PATH = $INTERNVL_IMAGE_FOLDER_PATH"
+echo "  INTERNVL_PROMPTS_PATH     = $INTERNVL_PROMPTS_PATH"
+echo ""
+if [[ "$RUNTIME_ENV" == "remote" ]]; then
+    echo "Note: Running in remote mode with environment variable overrides"
+else
+    echo "Note: Running in local mode with environment variables from .env file"
+fi
+echo "============================================================"
+echo ""
 
 # Map to the Python module path
 PYTHON_MODULE=""

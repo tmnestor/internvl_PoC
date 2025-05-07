@@ -119,10 +119,15 @@ The `run.sh` script supports running in either local or remote environments. Thi
 ./run.sh --remote single --image-path /path/to/image.jpg
 ```
 
-The environment mode affects how paths are validated:
-- **Local mode**: Validates that model paths exist on the local filesystem
-- **Remote mode**: Doesn't validate remote paths (like /home/jovyan/...) that would only exist on the server
-- **Warnings**: Provides environment-specific warnings about potentially misconfigured paths
+The environment mode affects how paths are handled:
+- **Local mode**: Uses paths as defined in .env file and validates they exist on the local filesystem
+- **Remote mode**: Automatically overrides critical paths with remote-specific values
+- **Path overrides**: In remote mode, these paths are hardcoded to remote values regardless of .env settings:
+  - `INTERNVL_PATH=/home/jovyan/nfs_share/tod/internvl_PoC`
+  - `INTERNVL_MODEL_PATH=/home/jovyan/nfs_share/models/huggingface/hub/InternVL2_5-1B`
+- **Dual environment workflow**: This allows you to maintain a single .env file with local paths, but run in remote mode when executing on the server
+
+This feature is especially useful when developing locally but executing on a remote server with different filesystem paths. You don't need to modify your .env file when switching between environments.
 
 ### Direct Python Module Execution (Recommended for Advanced Users)
 
