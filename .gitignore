@@ -47,7 +47,7 @@ ehthumbs.db
 Thumbs.db
 
 # Data directory (e.g., downloaded datasets)
-data/synthetic/
+# data/synthetic/
 
 # Claude-specific files
 CLAUDE.md

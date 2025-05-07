@@ -1,0 +1,27 @@
+{
+  "store_name": "ALDI",
+  "date": "10/04/2025",
+  "items": [
+    "Bananas 1kg",
+    "Rice 1kg",
+    "Bread",
+    "Milk 2L",
+    "Eggs 12pk"
+  ],
+  "quantities": [
+    "2",
+    "2",
+    "1",
+    "2",
+    "3"
+  ],
+  "prices": [
+    "9.55",
+    "10.65",
+    "6.31",
+    "3.99",
+    "16.35"
+  ],
+  "tax": "9.43",
+  "total": "103.74"
+}

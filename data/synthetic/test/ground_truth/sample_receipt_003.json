@@ -1,0 +1,27 @@
+{
+  "store_name": "IGA",
+  "date": "09/04/2025",
+  "items": [
+    "Bananas 1kg",
+    "Eggs 12pk",
+    "Rice 1kg",
+    "Chicken Breast",
+    "Chocolate"
+  ],
+  "quantities": [
+    "2",
+    "1",
+    "2",
+    "2",
+    "3"
+  ],
+  "prices": [
+    "4.82",
+    "8.61",
+    "14.65",
+    "3.11",
+    "22.26"
+  ],
+  "tax": "10.96",
+  "total": "120.55"
+}
