@@ -1,0 +1,173 @@
+# Australian Tax Office Receipt Extraction Prompts
+# This file contains prompts for extracting information from Australian receipts
+
+# Default prompt for receipt information extraction
+default_receipt_prompt: |
+  <image>
+  Extract these fields from the provided Australian receipt:
+  1. date_value: The date of purchase (DD/MM/YYYY)
+  2. store_name_value: The name of the Australian store or company
+  3. tax_value: The GST (10% tax) amount
+  4. total_value: The total purchase amount
+  5. prod_item_value: List of product items purchased
+  6. prod_quantity_value: List of quantities for each product
+  7. prod_price_value: List of prices for each product
+
+  Return the results in a valid JSON format:
+  {
+    "date_value": "DATE OF PURCHASE",
+    "store_name_value": "NAME OF STORE",
+    "tax_value": "GST AMOUNT",
+    "total_value": "TOTAL AMOUNT",
+    "prod_item_value": ["ITEM1", "ITEM2", ...],
+    "prod_quantity_value": [QUANTITY1, QUANTITY2, ...],
+    "prod_price_value": [PRICE1, PRICE2, ...]
+  }
+
+  Important notes for Australian receipts:
+  - GST (Goods and Services Tax) is 10% in Australia
+  - Dates are typically in DD/MM/YYYY format
+  - Major Australian retailers include Woolworths, Coles, ALDI, Bunnings, Kmart, etc.
+  - Store names should be in all capitals as they typically appear on receipts
+  - Ensure all lists have matching lengths
+  - If a field cannot be found, use an empty string or empty list as appropriate
+  - Total amount should include GST
+
+# Simple prompt for minimal, direct extraction
+simple_receipt_prompt: |
+  <image>
+  Extract information from this receipt and return it in JSON format.
+
+# Strict JSON-only prompt
+strict_json_prompt: |
+  <image>
+  Extract these seven fields from the provided Australian receipt image:
+  1. date_value
+  2. store_name_value
+  3. tax_value (GST amount)
+  4. total_value
+  5. prod_item_value
+  6. prod_quantity_value
+  7. prod_price_value
+
+  Return the results in JSON format. An example JSON format is:
+
+  JSON Output:
+  {
+  "date_value": "16/3/2023",
+  "store_name_value": "WOOLWORTHS METRO",
+  "tax_value": "3.82",
+  "total_value": "42.08",
+  "prod_item_value": [
+  "MILK 2L",
+  "BREAD MULTIGRAIN",
+  "EGGS FREE RANGE 12PK"
+  ],
+  "prod_quantity_value": [
+  "1",
+  "2",
+  "1"
+  ],
+  "prod_price_value": [
+  "4.50",
+  "8.00",
+  "7.60"
+  ]
+  }
+
+  Only return the values for the seven keys specified. Do not return any additional key-value pairs.
+  Do not output any additional information, notes, reasoning, or explanations. Output only the valid JSON.
+
+# Detailed prompt with field explanations
+detailed_receipt_prompt: |
+  <image>
+  Extract these seven fields from the provided Australian receipt image:
+  1. date_value
+  2. store_name_value
+  3. tax_value (GST amount)
+  4. total_value
+  5. prod_item_value
+  6. prod_quantity_value
+  7. prod_price_value
+
+  Return the results in JSON format. An example JSON format is:
+
+  JSON Output:
+  {
+  "date_value": "16/3/2023",
+  "store_name_value": "WOOLWORTHS METRO",
+  "tax_value": "3.82",
+  "total_value": "42.08",
+  "prod_item_value": [
+  "MILK 2L",
+  "BREAD MULTIGRAIN",
+  "EGGS FREE RANGE 12PK"
+  ],
+  "prod_quantity_value": [
+  "1",
+  "2",
+  "1"
+  ],
+  "prod_price_value": [
+  "4.50",
+  "8.00",
+  "7.60"
+  ]
+  }
+
+  For the key "date_value" return the date in the image.
+  For the key "store_name_value" return the name of the store in the image.
+  For the key "tax_value" return the GST (Australian Goods and Services Tax) amount in the image.
+  For the key "total_value" return the total including GST in the image.
+  For the key "prod_item_value" return the description of each item purchased in the image. If there is more than one, return them all in a list.
+  For the key "prod_quantity_value" return the number of each type of item purchased in the image. If there is more than one, return them all in a list.
+  For the key "prod_price_value" return the total cost of each type of item purchased in the image. If there is more than one, return them all in a list.
+  Only return the values for the seven keys specified. Do not return any additional key-value pairs.
+  Do not output any additional information, notes, reasoning, or explanations. Output only the valid JSON that starts with { and ends with }.
+
+# Optimized Australian prompt for better field extraction accuracy
+australian_optimized_prompt: |
+  <image>
+  Extract these seven fields from the provided Australian receipt image:
+  1. date_value
+  2. store_name_value
+  3. tax_value (GST amount)
+  4. total_value
+  5. prod_item_value
+  6. prod_quantity_value
+  7. prod_price_value
+
+  Return the results in JSON format. An example JSON format is:
+
+  JSON Output:
+  {
+  "date_value": "16/3/2023",
+  "store_name_value": "WOOLWORTHS METRO",
+  "tax_value": "3.82",
+  "total_value": "42.08",
+  "prod_item_value": [
+  "MILK 2L",
+  "BREAD MULTIGRAIN",
+  "EGGS FREE RANGE 12PK"
+  ],
+  "prod_quantity_value": [
+  "1",
+  "2",
+  "1"
+  ],
+  "prod_price_value": [
+  "4.50",
+  "8.00",
+  "7.60"
+  ]
+  }
+
+  Important Notes for Australian Receipts:
+  - For "tax_value" extract the GST (Goods and Services Tax) amount, typically 10% of the pre-tax total
+  - GST is often shown as a separate line item on Australian receipts
+  - Dates in Australia typically use the DD/MM/YYYY format
+  - Prices should include the '$' symbol and two decimal places
+  - Ensure product items, quantities, and prices are aligned in the same order
+
+  Only return the values for the seven keys specified. Do not return any additional key-value pairs.
+  Do not output any additional information, notes, reasoning, or explanations. Output only the valid JSON.

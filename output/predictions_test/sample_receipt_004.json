@@ -1,0 +1,27 @@
+{
+  "date_value": "19/04/2025",
+  "store_name_value": "ALDI",
+  "tax_value": "11.42",
+  "total_value": "125.58",
+  "prod_item_value": [
+    "Chicken Breast",
+    "Bread",
+    "Rice 1kg",
+    "Coffee 200g",
+    "Eggs 12pk"
+  ],
+  "prod_quantity_value": [
+    1,
+    2,
+    2,
+    2,
+    3
+  ],
+  "prod_price_value": [
+    12.89,
+    9.13,
+    5.61,
+    9.94,
+    21.11
+  ]
+}

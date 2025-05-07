@@ -1,0 +1,27 @@
+{
+  "date_value": "04/10/2025",
+  "store_name_value": "ALDI",
+  "tax_value": "9.43",
+  "total_value": "103.74",
+  "prod_item_value": [
+    "Bananas",
+    "Rice",
+    "Bread",
+    "Milk 2L",
+    "Eggs 12pk"
+  ],
+  "prod_quantity_value": [
+    2,
+    2,
+    1,
+    2,
+    3
+  ],
+  "prod_price_value": [
+    9.55,
+    10.65,
+    6.31,
+    3.99,
+    16.35
+  ]
+}
