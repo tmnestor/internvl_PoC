@@ -28,8 +28,8 @@ For multi-user Linux systems, it's important to set up isolated environments tha
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-organization/internvl-evaluation.git
-cd internvl-evaluation
+git clone https://github.com/tmnestor/internvl_PoC_.git
+cd internvl_PoC
 
 # Set up conda to use a user-specific environment directory
 # This avoids permission issues in shared environments
