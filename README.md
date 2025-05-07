@@ -107,6 +107,23 @@ chmod +x run.sh
 ./run.sh evaluate --predictions-dir /path/to/predictions --ground-truth-dir /path/to/ground_truth
 ```
 
+#### Local vs Remote Execution
+
+The `run.sh` script supports running in either local or remote environments. This is useful when developing locally but running the model on a remote server with different paths:
+
+```bash
+# Run in local environment mode (default)
+./run.sh --local single --image-path /path/to/image.jpg
+
+# Run in remote environment mode
+./run.sh --remote single --image-path /path/to/image.jpg
+```
+
+The environment mode affects how paths are validated:
+- **Local mode**: Validates that model paths exist on the local filesystem
+- **Remote mode**: Doesn't validate remote paths (like /home/jovyan/...) that would only exist on the server
+- **Warnings**: Provides environment-specific warnings about potentially misconfigured paths
+
 ### Direct Python Module Execution (Recommended for Advanced Users)
 
 For more control and transparency, you can run the Python modules directly:
@@ -188,8 +205,9 @@ internvl-evaluation/
 [MIT License](LICENSE)
 
 ```bash
-./run.sh single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
-./run.sh batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images
-./run.sh predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./run.sh evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/ground_truth
+# Remote execution examples (with remote paths)
+./run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
+./run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images
+./run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/ground_truth
 ```

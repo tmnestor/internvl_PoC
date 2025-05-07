@@ -17,6 +17,25 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # This tells Python to look for modules in the project directory first
 export PYTHONPATH="${PROJECT_DIR}"
 
+# Default to local environment
+RUNTIME_ENV="local"
+
+# Parse runtime environment option
+for arg in "$@"; do
+    case $arg in
+        --remote)
+            RUNTIME_ENV="remote"
+            shift
+            ;;
+        --local)
+            RUNTIME_ENV="local"
+            shift
+            ;;
+    esac
+done
+
+echo "Running in $RUNTIME_ENV environment mode"
+
 # Function to validate required environment variables
 validate_env() {
     local missing_vars=()
@@ -83,29 +102,96 @@ if [ ! -f "${PROJECT_DIR}/.env" ]; then
     exit 1
 fi
 
-# (function moved to beginning of script)
+# Function to validate path based on the execution environment
+validate_path() {
+    local path_type=$1
+    local path=$2
+    
+    # Skip validation for non-path variables
+    if [[ $path != /* ]]; then
+        # For model path this could be a HuggingFace ID
+        if [[ $path_type == "MODEL_PATH" && $path != *"/"* ]]; then
+            echo "Using HuggingFace model: $path"
+            return 0
+        fi
+        echo "INFO: $path_type does not appear to be a path"
+        return 0
+    fi
+    
+    # Validate based on environment mode
+    if [[ "$RUNTIME_ENV" == "local" ]]; then
+        # For local environment, check if the path exists on the local filesystem
+        if [[ $path == /home/jovyan/* ]]; then
+            echo "WARNING: Remote path detected in local environment for $path_type: $path"
+            echo "You may need to edit the .env file to set the correct local path"
+            return 1
+        elif [ ! -d "$path" ] && [ ! -f "$path" ]; then
+            echo "WARNING: Path for $path_type not found at $path"
+            echo "You may need to:"
+            echo "  1. Edit the .env file to set the correct path"
+            echo "  2. Create the directory or file at the specified location"
+            return 1
+        else
+            echo "Using local path for $path_type: $path"
+            return 0
+        fi
+    elif [[ "$RUNTIME_ENV" == "remote" ]]; then
+        # For remote environment, expect paths to be on the remote server
+        if [[ $path == /home/jovyan/* ]]; then
+            echo "Using remote path for $path_type: $path"
+            return 0
+        elif [[ $path == /Users/* ]]; then
+            echo "WARNING: Local path detected in remote environment for $path_type: $path"
+            echo "You may need to edit the .env file to set the correct remote path"
+            return 1
+        else
+            echo "Using path for $path_type: $path"
+            echo "Note: Path will be validated during runtime on the remote server"
+            return 0
+        fi
+    fi
+}
 
 # Ensure output directory exists
 mkdir -p "${PROJECT_DIR}/output"
 
-# Get model path from .env file
-MODEL_PATH=$(grep "INTERNVL_MODEL_PATH" "${PROJECT_DIR}/.env" | cut -d'=' -f2)
+# Validate core paths
+echo "Validating paths for $RUNTIME_ENV environment..."
 
-# Check if model path exists (if it's a local path)
-if [[ $MODEL_PATH != *"/"* ]]; then
-    # Looks like a HuggingFace model ID, so that's fine
-    echo "Using HuggingFace model: $MODEL_PATH"
-elif [ ! -d "$MODEL_PATH" ]; then
-    echo "WARNING: Model directory not found at $MODEL_PATH"
-    echo "You may need to:"
-    echo "  1. Edit the .env file to set the correct INTERNVL_MODEL_PATH"
-    echo "  2. Download the model to the specified location"
-    echo "  3. Or use a HuggingFace model ID (e.g., 'OpenGVLab/InternVL2_5-1B')"
-fi
+# Define the paths to validate
+declare -a paths_to_validate=(
+    "INTERNVL_PATH"
+    "MODEL_PATH"
+    "DATA_PATH"
+    "OUTPUT_PATH"
+    "IMAGE_FOLDER_PATH"
+    "PROMPTS_PATH"
+)
+
+# Validate each path
+for path_type in "${paths_to_validate[@]}"; do
+    env_var="INTERNVL_${path_type}"
+    # Handle special case for INTERNVL_PATH which doesn't have the INTERNVL_ prefix
+    if [[ $path_type == "INTERNVL_PATH" ]]; then
+        env_var="INTERNVL_PATH"
+        path_type="PROJECT_PATH"
+    fi
+    
+    # Get path from .env file
+    path_value=$(grep "${env_var}=" "${PROJECT_DIR}/.env" | cut -d'=' -f2)
+    
+    if [[ ! -z "$path_value" ]]; then
+        validate_path "$path_type" "$path_value"
+    fi
+done
 
 # Check for arguments
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <command> [arguments] [--quiet|-q]"
+    echo "Usage: $0 [--local|--remote] <command> [arguments] [--quiet|-q]"
+    echo ""
+    echo "Environment Mode:"
+    echo "  --local    - Run in local environment mode (default)"
+    echo "  --remote   - Run in remote environment mode"
     echo ""
     echo "Commands:"
     echo "  single     - Process a single image"
@@ -118,11 +204,12 @@ if [ $# -lt 1 ]; then
     echo ""
     echo "Examples:"
     echo "  $0 single --image-path /path/to/image.jpg"
-    echo "  $0 single --image-path /path/to/image.jpg --quiet"
+    echo "  $0 --remote single --image-path /path/to/image.jpg"
+    echo "  $0 --local single --image-path /path/to/image.jpg --quiet"
     exit 1
 fi
 
-# First argument is the command
+# First argument is the command (after any environment flags)
 COMMAND=$1
 shift
 
@@ -132,6 +219,9 @@ NEW_ARGS=()
 for arg in "$@"; do
     if [ "$arg" == "--quiet" ] || [ "$arg" == "-q" ]; then
         QUIET_MODE=true
+    elif [ "$arg" == "--local" ] || [ "$arg" == "--remote" ]; then
+        # Environment flags already processed, ignore them here
+        continue
     else
         NEW_ARGS+=("$arg")
     fi
