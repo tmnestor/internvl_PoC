@@ -1,0 +1,21 @@
+{
+  "prod_item_value": [
+    "Teh (B)",
+    "Cham (B)",
+    "Take Away"
+  ],
+  "date_value": "10-05-2018",
+  "total_value": "7.2",
+  "prod_quantity_value": [
+    "2",
+    "1",
+    "3"
+  ],
+  "tax_value": "0.39",
+  "prod_price_value": [
+    "4.40",
+    "2.20",
+    "0.60"
+  ],
+  "store_name_value": "RESTORAN WAN SHENG"
+}

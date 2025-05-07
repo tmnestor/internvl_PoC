@@ -216,3 +216,76 @@ internvl-evaluation/
 ./run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
 ./run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/ground_truth
 ```
+
+## SROIE Dataset Evaluation
+
+This project includes tools to evaluate the InternVL model on the SROIE receipt dataset. The SROIE dataset consists of real-world receipts with annotations for key fields like date, store name, tax, total, and line items.
+
+### Preparation
+
+The SROIE dataset is located in the `raechel_gold_images` directory with the following structure:
+- `raechel_gold_images/*.jpg` - Receipt images
+- `raechel_gold_images/ground_truth_sroie_v5.json` - Original ground truth data (in nested format)
+- `raechel_gold_images/ground_truth/*.json` - Split ground truth files (created by the scripts)
+
+Before evaluation, the ground truth data needs to be prepared (this has already been done):
+
+1. Split the nested JSON file into individual files:
+   ```bash
+   ./split_json.sh
+   ```
+
+2. Fix any format issues:
+   ```bash
+   python3 fix_sroie_format.py
+   python3 fix_null_files.py
+   ```
+
+### Running the Evaluation
+
+The SROIE evaluation can be run with the provided script:
+
+```bash
+# For local execution
+./evaluate_sroie.sh
+
+# For remote execution - edit the script first to set MODE="--remote"
+vim evaluate_sroie.sh  # Change MODE="--local" to MODE="--remote"
+./evaluate_sroie.sh
+```
+
+The `evaluate_sroie.sh` script performs the following steps:
+1. Generates predictions for all SROIE images
+2. Evaluates the predictions against the ground truth files
+3. Saves evaluation results to `output/evaluation_results.*`
+
+### Remote Execution Notes
+
+When running on a remote server:
+
+1. Edit `evaluate_sroie.sh` to change the mode:
+   ```bash
+   # Change this line
+   MODE="--remote"  # For remote execution
+   ```
+
+2. Make sure all paths in the script are absolute and point to the correct locations on the remote server.
+
+3. Run the script:
+   ```bash
+   ./evaluate_sroie.sh
+   ```
+
+4. Results will be available in:
+   - `output/evaluation_results.csv` - CSV format results
+   - `output/evaluation_results.json` - Detailed JSON results
+   - `output/evaluation_results.png` - Visualization of F1 scores by field
+
+The evaluation compares your model's extraction performance on key fields:
+- `date_value` - Date of the receipt
+- `store_name_value` - Name of the store
+- `tax_value` - Tax amount
+- `total_value` - Total amount
+- `prod_item_value` - Product names
+- `prod_quantity_value` - Quantities
+- `prod_price_value` - Prices

@@ -1,0 +1,33 @@
+{
+  "prod_item_value": [
+    "QL CLASSIC EGGS",
+    "WHITE GARLIC",
+    "OLD GINGER",
+    "CHIC DRUMSTICK",
+    "CHIC DRUMSTICK",
+    "DEER SESAME OI"
+  ],
+  "date_value": "12/04/2018",
+  "total_value": [
+    "24.11",
+    "24.10"
+  ],
+  "prod_quantity_value": [
+    "1",
+    "1",
+    "1",
+    "1",
+    "1",
+    "1"
+  ],
+  "tax_value": "0.52",
+  "prod_price_value": [
+    "4.60",
+    "0.88",
+    "0.48",
+    "5.50",
+    "3.55",
+    "9.10"
+  ],
+  "store_name_value": "AEON CO. (M) BHD"
+}

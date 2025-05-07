@@ -1,0 +1,26 @@
+{
+  "prod_item_value": [
+    "SN2 Soup Pan Mee",
+    "ST8",
+    "SN8 Sp Nod Special",
+    "WC1 (C) WC",
+    "VA9 French Fries Bkt"
+  ],
+  "date_value": "03 Jun 18",
+  "total_value": "28.02",
+  "prod_quantity_value": [
+    "1",
+    "1",
+    "1"
+  ],
+  "tax_value": "0.00",
+  "prod_price_value": [
+    "10.90",
+    "12.97",
+    "4.15"
+  ],
+  "store_name_value": [
+    "OLD TOWN WHITE COFFE",
+    "EXQUISITE GARDEN SON BHD"
+  ]
+}

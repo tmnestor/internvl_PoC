@@ -1,0 +1,24 @@
+{
+  "prod_item_value": [
+    "B01 - MUSHROOM BR",
+    "001 - SIZZLING PO",
+    "003 - BLACK SUGAR",
+    "P05 - BROWN SUGAR"
+  ],
+  "date_value": "19/04/2018",
+  "total_value": "46.25",
+  "prod_quantity_value": [
+    "1",
+    "1",
+    "1",
+    "1"
+  ],
+  "tax_value": "2.62",
+  "prod_price_value": [
+    "12.90",
+    "13.90",
+    "11.90",
+    "4.95"
+  ],
+  "store_name_value": "CHA FOR TEA"
+}
