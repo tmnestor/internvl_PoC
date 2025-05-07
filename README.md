@@ -187,3 +187,9 @@ internvl-evaluation/
 
 [MIT License](LICENSE)
 
+```bash
+./run.sh single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
+./run.sh batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images
+./run.sh predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./run.sh evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/ground_truth
+```
