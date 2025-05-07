@@ -156,7 +156,8 @@ validate_path() {
 mkdir -p "${PROJECT_DIR}/output"
 
 # Validate core paths
-echo "Validating paths for $RUNTIME_ENV environment..."
+echo "Validating active paths for $RUNTIME_ENV environment..."
+echo "Note: Only checking non-commented lines in .env (lines without # prefix)"
 
 # Define the paths to validate
 declare -a paths_to_validate=(
@@ -177,8 +178,10 @@ for path_type in "${paths_to_validate[@]}"; do
         path_type="PROJECT_PATH"
     fi
     
-    # Get path from .env file
-    path_value=$(grep "${env_var}=" "${PROJECT_DIR}/.env" | cut -d'=' -f2)
+    # Get path from .env file - only get active (non-commented) lines
+    # Use awk to properly handle the whole value after the equals sign including spaces
+    # And only take the first match in case of multiple definitions
+    path_value=$(grep "^${env_var}=" "${PROJECT_DIR}/.env" | head -n 1 | awk -F "=" '{print $2}')
     
     if [[ ! -z "$path_value" ]]; then
         validate_path "$path_type" "$path_value"
