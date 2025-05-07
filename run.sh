@@ -36,22 +36,6 @@ done
 
 echo "Running in $RUNTIME_ENV environment mode"
 
-# Override environment variables for remote execution
-if [[ "$RUNTIME_ENV" == "remote" ]]; then
-    # Override with remote paths
-    echo "Setting remote environment variables (overriding .env file values)..."
-    export INTERNVL_PATH="/home/jovyan/nfs_share/tod/internvl_PoC"
-    export INTERNVL_MODEL_PATH="/home/jovyan/nfs_share/models/huggingface/hub/InternVL2_5-1B"
-    echo "  INTERNVL_PATH=$INTERNVL_PATH"
-    echo "  INTERNVL_MODEL_PATH=$INTERNVL_MODEL_PATH"
-    
-    # You can add more remote-specific environment variables here as needed
-    # For example:
-    # export INTERNVL_DATA_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data"
-    # export INTERNVL_OUTPUT_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/output"
-    # etc.
-fi
-
 # Function to validate required environment variables
 validate_env() {
     local missing_vars=()
@@ -89,12 +73,32 @@ grep -v '^#' ${PROJECT_DIR}/.env | sed 's/^/export /' > ${PROJECT_DIR}/.env.sh.t
 source ${PROJECT_DIR}/.env.sh.tmp > /dev/null 2>&1
 rm ${PROJECT_DIR}/.env.sh.tmp
 
-# Validate that required environment variables are set
-validate_env
-
 # Debug: Print only the count of INTERNVL_ environment variables without full listing
 INTERNVL_COUNT=$(env | grep -c INTERNVL_ || echo 0)
 echo "Found $INTERNVL_COUNT INTERNVL_ environment variables"
+
+# Override environment variables for remote execution - IMPORTANT: This happens AFTER loading .env
+if [[ "$RUNTIME_ENV" == "remote" ]]; then
+    # Override with remote paths
+    echo "Setting remote environment variables (overriding .env file values)..."
+    export INTERNVL_PATH="/home/jovyan/nfs_share/tod/internvl_PoC"
+    export INTERNVL_MODEL_PATH="/home/jovyan/nfs_share/models/huggingface/hub/InternVL2_5-1B"
+    export INTERNVL_DATA_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data"
+    export INTERNVL_OUTPUT_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/output"
+    export INTERNVL_IMAGE_FOLDER_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/test/images"
+    export INTERNVL_PROMPTS_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/prompts.yaml"
+    
+    echo "Remote environment variables now active:"
+    echo "  INTERNVL_PATH=$INTERNVL_PATH"
+    echo "  INTERNVL_MODEL_PATH=$INTERNVL_MODEL_PATH"
+    echo "  INTERNVL_DATA_PATH=$INTERNVL_DATA_PATH"
+    echo "  INTERNVL_OUTPUT_PATH=$INTERNVL_OUTPUT_PATH"
+    echo "  INTERNVL_IMAGE_FOLDER_PATH=$INTERNVL_IMAGE_FOLDER_PATH"
+    echo "  INTERNVL_PROMPTS_PATH=$INTERNVL_PROMPTS_PATH"
+fi
+
+# Validate that required environment variables are set
+validate_env
 
 # Check that .env file exists
 if [ ! -f "${PROJECT_DIR}/.env" ]; then
@@ -278,7 +282,7 @@ echo "ENVIRONMENT SUMMARY"
 echo "============================================================"
 echo "Environment Mode: $RUNTIME_ENV"
 echo ""
-echo "Key Paths (these will be used during execution):"
+echo "FINAL ENVIRONMENT VALUES (these will be used during execution):"
 echo "  INTERNVL_PATH             = $INTERNVL_PATH"
 echo "  INTERNVL_MODEL_PATH       = $INTERNVL_MODEL_PATH"
 echo "  INTERNVL_DATA_PATH        = $INTERNVL_DATA_PATH"
@@ -288,6 +292,8 @@ echo "  INTERNVL_PROMPTS_PATH     = $INTERNVL_PROMPTS_PATH"
 echo ""
 if [[ "$RUNTIME_ENV" == "remote" ]]; then
     echo "Note: Running in remote mode with environment variable overrides"
+    echo "      All paths have been automatically set to remote server paths"
+    echo "      Original values from .env file have been overridden"
 else
     echo "Note: Running in local mode with environment variables from .env file"
 fi
