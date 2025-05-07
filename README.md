@@ -147,19 +147,19 @@ The `run.sh` script provides convenience features like automatic environment set
 
 ```bash
 # First, make the script executable
-chmod +x run.sh
+chmod +x scripts/run.sh
 
 # Process a single image
-./run.sh single --image-path /path/to/image.jpg
+./scripts/run.sh single --image-path /path/to/image.jpg
 
 # Process multiple images
-./run.sh batch --image-folder-path /path/to/images
+./scripts/run.sh batch --image-folder-path /path/to/images
 
 # Generate predictions
-./run.sh predict --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
+./scripts/run.sh predict --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
 
 # Evaluate extraction results
-./run.sh evaluate --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
+./scripts/run.sh evaluate --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
 ```
 
 #### Local vs Remote Execution
@@ -168,10 +168,10 @@ The `run.sh` script supports running in either local or remote environments. Thi
 
 ```bash
 # Run in local environment mode (default)
-./run.sh --local single --image-path /path/to/image.jpg
+./scripts/run.sh --local single --image-path /path/to/image.jpg
 
 # Run in remote environment mode
-./run.sh --remote single --image-path /path/to/image.jpg
+./scripts/run.sh --remote single --image-path /path/to/image.jpg
 ```
 
 The environment mode affects how paths are handled:
@@ -259,10 +259,10 @@ internvl-evaluation/
 ├── tests/                # Unit tests
 ├── internvl_env.yml       # Conda environment specification
 ├── prompts.yaml          # Prompt templates for model extraction tasks
-├── run.sh                # Helper script for running commands
 ├── RUNNING.md            # Documentation for running commands
 ├── SHARED_COMPUTE.md     # Guide for running on shared compute resources
 ├── SETUP_INSTRUCTIONS.md # Setup instructions
+├── scripts/             # Shell scripts
 └── README.md             # This file
 ```
 
@@ -293,7 +293,7 @@ Before evaluation, the ground truth data needs to be prepared (this has already 
 
 1. Split the nested JSON file into individual files:
    ```bash
-   ./split_json.sh
+   ./scripts/split_json.sh
    ```
 
 2. Fix any format issues:
@@ -308,11 +308,11 @@ The SROIE evaluation can be run with the provided script:
 
 ```bash
 # For local execution
-./evaluate_sroie.sh
+./scripts/evaluate_sroie.sh
 
 # For remote execution - edit the script first to set MODE="--remote"
-vim evaluate_sroie.sh  # Change MODE="--local" to MODE="--remote"
-./evaluate_sroie.sh
+vim scripts/evaluate_sroie.sh  # Change MODE="--local" to MODE="--remote"
+./scripts/evaluate_sroie.sh
 ```
 
 The `evaluate_sroie.sh` script performs the following steps:
@@ -334,7 +334,7 @@ When running on a remote server:
 
 3. Run the script:
    ```bash
-   ./evaluate_sroie.sh
+   ./scripts/evaluate_sroie.sh
    ```
 
 4. Results will be available in:

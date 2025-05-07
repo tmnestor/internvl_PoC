@@ -2,15 +2,19 @@
 # Script to split nested JSON into individual files
 
 # Get the input file with absolute path
-INPUT_FILE="data/sroie/ground_truth_sroie_v5.json"
-OUTPUT_DIR="data/sroie/ground_truth"
+# Get project root directory (one level up from scripts)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Use absolute paths with PROJECT_ROOT
+INPUT_FILE="$PROJECT_ROOT/data/sroie/ground_truth_sroie_v5.json"
+OUTPUT_DIR="$PROJECT_ROOT/data/sroie/ground_truth"
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
 # Get the image files to match against
-IMAGE_FILES=($(ls -1 data/sroie/images/sroie_test_*.jpg | sort))
-echo "Found ${#IMAGE_FILES[@]} image files in data/sroie/images/"
+IMAGE_FILES=($(ls -1 "$PROJECT_ROOT/data/sroie/images/sroie_test_*.jpg" | sort))
+echo "Found ${#IMAGE_FILES[@]} image files in $PROJECT_ROOT/data/sroie/images/"
 
 # Extract each entry and save to a file matching the image filename pattern
 for image_path in "${IMAGE_FILES[@]}"; do
