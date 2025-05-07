@@ -11,7 +11,7 @@ The conda environment `internvl_env` is already created at:
 
 If you need to update the environment with any new dependencies, run:
 ```bash
-conda env update -f environment.yml --prune
+conda env update -f internvl_env.yml --prune
 ```
 
 ## 2. Activate the Environment

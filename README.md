@@ -38,7 +38,7 @@ conda config --append envs_dirs ~/conda_envs
 
 # Create the environment with a specific name for this project
 # The --prefix option ensures it's created in your user directory
-conda env create -f environment.yml --prefix ~/conda_envs/internvl_env
+conda env create -f internvl_env.yml --prefix ~/conda_envs/internvl_env
 
 # Activate the environment
 conda activate ~/conda_envs/internvl_env
@@ -257,7 +257,7 @@ internvl-evaluation/
 │       └── images/       # Receipt images for testing
 ├── output/               # Output directory for results
 ├── tests/                # Unit tests
-├── environment.yml       # Conda environment specification
+├── internvl_env.yml       # Conda environment specification
 ├── prompts.yaml          # Prompt templates for model extraction tasks
 ├── run.sh                # Helper script for running commands
 ├── RUNNING.md            # Documentation for running commands

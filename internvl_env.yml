@@ -60,8 +60,8 @@ dependencies:
     
 # Usage Instructions:
 # -----------------
-# Create environment: conda env create -f environment.yml
-# Update environment: conda env update -f environment.yml --prune
+# Create environment: conda env create -f internvl_env.yml
+# Update environment: conda env update -f internvl_env.yml --prune
 # Activate environment: conda activate internvl_env
 # Remove environment: conda env remove -n internvl_env
 #

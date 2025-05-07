@@ -14,7 +14,7 @@ mkdir -p ~/conda_envs
 conda config --append envs_dirs ~/conda_envs
 
 # Create the environment in your user space
-conda env create -f environment.yml --prefix ~/conda_envs/internvl_env
+conda env create -f internvl_env.yml --prefix ~/conda_envs/internvl_env
 
 # Activate the environment
 conda activate ~/conda_envs/internvl_env

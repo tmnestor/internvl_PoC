@@ -73,7 +73,7 @@ For both approaches, the following environment setup is required:
 
 1. Standard Conda environment setup:
    ```bash
-   conda env create -f environment.yml
+   conda env create -f internvl_env.yml
    conda activate internvl_env
    ```
 
@@ -95,7 +95,7 @@ For shared Linux systems where multiple users run the code:
    conda config --append envs_dirs ~/conda_envs
    
    # Create the environment in user space
-   conda env create -f environment.yml --prefix ~/conda_envs/internvl_env
+   conda env create -f internvl_env.yml --prefix ~/conda_envs/internvl_env
    conda activate ~/conda_envs/internvl_env
    ```
 
