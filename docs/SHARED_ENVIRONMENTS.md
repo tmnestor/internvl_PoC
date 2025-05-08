@@ -34,7 +34,7 @@ conda config --show envs_dirs
 ```
 
 Typical locations include:
-- Personal environments: `/home/username/.conda/envs/`
+- Personal environments: `/home/jovyan/.conda/envs/`
 - Shared environments: `/efs/shared/.conda/envs/` 
 
 ## Creating a Shared Environment
@@ -46,8 +46,8 @@ In your environment YAML file (e.g., `internvl_env.yml`), add a prefix pointing 
 ```yaml
 name: internvl_env
 channels:
-  - pytorch
-  - conda-forge
+  # - /
+  # - https://artifactory.ctz.atocnet.gov.au/artifactory/api/conda/sdpaapds-conda-develop-local
   - defaults
 dependencies:
   - python=3.11
