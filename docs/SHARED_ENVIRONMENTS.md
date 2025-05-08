@@ -143,6 +143,16 @@ Then activate by name:
 conda activate internvl_env
 ```
 
+### Creating an Activation Alias (Recommended)
+
+For convenience, users can add an alias to their .bashrc file:
+
+```bash
+echo 'alias activate_internvl="conda activate /efs/shared/.conda/envs/internvl_env"' >> ~/.bashrc && source ~/.bashrc
+```
+
+After running this command, users can simply type `activate_internvl` to activate the shared environment. This is especially useful in JupyterHub environments where typing the full path repeatedly can be tedious.
+
 ## Checking Group Membership
 
 To see who's in your group:
