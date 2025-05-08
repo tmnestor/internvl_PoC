@@ -64,10 +64,20 @@ For JupyterHub environments where everyone shares the "jovyan" username, this ap
 ### 2. Create the Environment
 
 ```bash
+# This may not work if command line options override the YAML prefix
 conda env create -f internvl_env.yml
+
+# If the environment is still created in ~/.conda/envs, use this explicit approach:
+conda env create -f internvl_env.yml -p /efs/shared/.conda/envs/internvl_env
 ```
 
-The `prefix` directive in the YAML file tells Conda to create the environment at that specific location, rather than in your personal space.
+**Note about prefix issues:** If your environment is still being created in `~/.conda/envs/internvl_env` despite having set `prefix:` in the YAML:
+
+1. Command line options (`-n` or `--name`) override the YAML prefix
+2. Some versions of conda may prioritize the name over the prefix in the YAML
+3. Your conda config might have settings that override the prefix
+
+Always use the `-p` or `--prefix` flag directly when creating a shared environment to ensure the correct location:
 
 ## Setting Proper Permissions
 
@@ -221,6 +231,24 @@ Then install packages as normal with pip.
 ## JupyterHub Environment Management
 
 For JupyterHub administrators and users:
+
+### Forcing Environment Location
+
+If you're having trouble creating environments in the shared location:
+
+```bash
+# First, ensure the target directory exists with proper permissions
+mkdir -p /efs/shared/.conda/envs
+chmod 2775 /efs/shared/.conda/envs
+
+# Then create the environment with explicit prefix
+conda env create -f internvl_env.yml -p /efs/shared/.conda/envs/internvl_env --force
+
+# Or use conda create directly (instead of from YAML)
+conda create -p /efs/shared/.conda/envs/internvl_env python=3.11 pytorch torchvision -c pytorch
+```
+
+This approach ensures the environment goes exactly where you want it, regardless of YAML settings or conda defaults.
 
 ### Multiple Users with Same System Username
 
