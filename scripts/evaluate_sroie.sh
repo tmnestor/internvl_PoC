@@ -13,7 +13,7 @@ mkdir -p "$PROJECT_ROOT/output/predictions_sroie"
 # First generate predictions on all SROIE images
 echo "Generating predictions on SROIE images..."
 cd "$PROJECT_ROOT" && ./scripts/run.sh $MODE predict \
-  --test-image-dir "$PROJECT_ROOT/raechel_gold_images" \
+  --test-image-dir "$PROJECT_ROOT/data/sroie/images" \
   --output-dir "$PROJECT_ROOT/output/predictions_sroie" \
   --image-pattern "sroie_test_*.jpg" \
   --prompt-name default_receipt_prompt
@@ -22,6 +22,6 @@ cd "$PROJECT_ROOT" && ./scripts/run.sh $MODE predict \
 echo "Evaluating predictions against ground truth..."
 cd "$PROJECT_ROOT" && ./scripts/run.sh $MODE evaluate \
   --predictions-dir "$PROJECT_ROOT/output/predictions_sroie" \
-  --ground-truth-dir "$PROJECT_ROOT/raechel_gold_images/ground_truth"
+  --ground-truth-dir "$PROJECT_ROOT/data/sroie/ground_truth"
 
 echo "Evaluation complete! Results saved to output/evaluation_results.*"

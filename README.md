@@ -284,10 +284,10 @@ This project includes tools to evaluate the InternVL model on the SROIE receipt 
 
 ### Preparation
 
-The SROIE dataset is located in the `raechel_gold_images` directory with the following structure:
-- `raechel_gold_images/*.jpg` - Receipt images
-- `raechel_gold_images/ground_truth_sroie_v5.json` - Original ground truth data (in nested format)
-- `raechel_gold_images/ground_truth/*.json` - Split ground truth files (created by the scripts)
+The SROIE dataset is located in the `data/sroie` directory with the following structure:
+- `data/sroie/images/*.jpg` - Receipt images
+- `data/sroie/ground_truth_sroie_v5.json` - Original ground truth data (in nested format)
+- `data/sroie/ground_truth/*.json` - Split ground truth files (created by the scripts)
 
 Before evaluation, the ground truth data needs to be prepared (this has already been done):
 
@@ -298,8 +298,8 @@ Before evaluation, the ground truth data needs to be prepared (this has already 
 
 2. Fix any format issues:
    ```bash
-   python3 fix_sroie_format.py
-   python3 fix_null_files.py
+   python3 scripts/fix_sroie_format.py
+   python3 scripts/fix_null_files.py
    ```
 
 ### Running the Evaluation
@@ -350,3 +350,5 @@ The evaluation compares your model's extraction performance on key fields:
 - `prod_item_value` - Product names
 - `prod_quantity_value` - Quantities
 - `prod_price_value` - Prices
+
+Note: Make sure to run the evaluation script from the project root directory for proper path resolution.
