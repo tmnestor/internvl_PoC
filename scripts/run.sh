@@ -10,8 +10,8 @@
 # IMPORTANT: All scripts use the src.internvl import path pattern
 # to maintain compatibility when running as Python modules.
 
-# Set absolute path to project directory
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Set absolute path to project directory (parent of scripts directory)
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Set PYTHONPATH to include the project directory
 # This tells Python to look for modules in the project directory first
