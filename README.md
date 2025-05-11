@@ -266,17 +266,22 @@ internvl-evaluation/
 └── README.md             # This file
 ```
 
-## License
-
-[MIT License](LICENSE)
+## Remote execution examples (with remote paths)
 
 ```bash
-# Remote execution examples (with remote paths)
-./run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
-./run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images
-./run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
+./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
+./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images
+./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
 ```
+
+
+```bash
+./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images
+./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
+```
+
 
 ## SROIE Dataset Evaluation
 
@@ -352,3 +357,8 @@ The evaluation compares your model's extraction performance on key fields:
 - `prod_price_value` - Prices
 
 Note: Make sure to run the evaluation script from the project root directory for proper path resolution.
+
+
+## License
+
+[MIT License](LICENSE)

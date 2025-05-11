@@ -85,7 +85,7 @@ if [[ "$RUNTIME_ENV" == "remote" ]]; then
     export INTERNVL_MODEL_PATH="/home/jovyan/nfs_share/models/huggingface/hub/InternVL2_5-1B"
     export INTERNVL_DATA_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data"
     export INTERNVL_OUTPUT_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/output"
-    export INTERNVL_IMAGE_FOLDER_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images"
+    # Don't override INTERNVL_IMAGE_FOLDER_PATH to allow command line arguments to control it
     export INTERNVL_PROMPTS_PATH="/home/jovyan/nfs_share/tod/internvl_PoC/prompts.yaml"
     
     echo "Remote environment variables now active:"
@@ -93,8 +93,8 @@ if [[ "$RUNTIME_ENV" == "remote" ]]; then
     echo "  INTERNVL_MODEL_PATH=$INTERNVL_MODEL_PATH"
     echo "  INTERNVL_DATA_PATH=$INTERNVL_DATA_PATH"
     echo "  INTERNVL_OUTPUT_PATH=$INTERNVL_OUTPUT_PATH"
-    echo "  INTERNVL_IMAGE_FOLDER_PATH=$INTERNVL_IMAGE_FOLDER_PATH"
     echo "  INTERNVL_PROMPTS_PATH=$INTERNVL_PROMPTS_PATH"
+    echo "  (IMAGE_FOLDER_PATH can be overridden by command line arguments)"
 fi
 
 # Validate that required environment variables are set
@@ -287,7 +287,7 @@ echo "  INTERNVL_PATH             = $INTERNVL_PATH"
 echo "  INTERNVL_MODEL_PATH       = $INTERNVL_MODEL_PATH"
 echo "  INTERNVL_DATA_PATH        = $INTERNVL_DATA_PATH"
 echo "  INTERNVL_OUTPUT_PATH      = $INTERNVL_OUTPUT_PATH"
-echo "  INTERNVL_IMAGE_FOLDER_PATH = $INTERNVL_IMAGE_FOLDER_PATH"
+echo "  INTERNVL_IMAGE_FOLDER_PATH = $INTERNVL_IMAGE_FOLDER_PATH (may be overridden by command line arguments)"
 echo "  INTERNVL_PROMPTS_PATH     = $INTERNVL_PROMPTS_PATH"
 echo ""
 if [[ "$RUNTIME_ENV" == "remote" ]]; then
