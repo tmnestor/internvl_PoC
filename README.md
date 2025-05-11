@@ -141,7 +141,7 @@ default_receipt_prompt: |
 
 There are two ways to run InternVL scripts:
 
-### Using the run.sh Script (Recommended for Beginners)
+### Using the run.sh Script (Simplest Method)
 
 The `run.sh` script provides convenience features like automatic environment setup, dependency checks, and simplified commands:
 
@@ -184,7 +184,7 @@ The environment mode affects how paths are handled:
 
 This feature is especially useful when developing locally but executing on a remote server with different filesystem paths. You don't need to modify your .env file when switching between environments.
 
-### Direct Python Module Execution (Recommended for Advanced Users)
+### Direct Python Module Execution (Advanced Method)
 
 For more control and transparency, you can run the Python modules directly:
 
