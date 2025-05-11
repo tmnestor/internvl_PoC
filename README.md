@@ -271,15 +271,19 @@ internvl-evaluation/
 ```bash
 ./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
 ./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images
-./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
+./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images \
+  --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test \
+  --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
 ```
 
 
 ```bash
 ./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images
-./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
+./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images \
+  --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
+./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test \
+  --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
 ```
 
 
