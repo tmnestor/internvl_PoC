@@ -189,19 +189,40 @@ This feature is especially useful when developing locally but executing on a rem
 For more control and transparency, you can run the Python modules directly:
 
 ```bash
-# Set the PYTHONPATH to include the project directory
+# Method 1: Using run.sh for environment setup
+./scripts/run.sh single --image-path /path/to/image.jpg
+
+# Method 2: Manual Python execution with proper environment setup
+# First, set the PYTHONPATH to include the project directory
 export PYTHONPATH=/path/to/project/root
 
-# Process a single image
-python3 -m src.scripts.internvl_single --image-path /path/to/image.jpg
+# Load environment variables from .env file with shell variable expansion
+source <(grep -v '^#' .env | sed 's/^/export /')
 
+# Now run the Python module
+python3 -m src.scripts.internvl_single --image-path /path/to/image.jpg
+```
+
+The second method uses this command to load environment variables:
+- `grep -v '^#' .env` - Filters out comment lines from the .env file
+- `sed 's/^/export /'` - Adds "export " to the beginning of each line
+- `source <( ... )` - Sources the resulting commands into your current shell
+
+This ensures that all environment variables, including those with variable interpolation like `${INTERNVL_PATH}/data`, are properly expanded and available to the Python script.
+
+Other modules can be run similarly:
+
+```bash
 # Process multiple images
+source <(grep -v '^#' .env | sed 's/^/export /')
 python3 -m src.scripts.internvl_batch --image-folder-path /path/to/images
 
 # Generate predictions
+source <(grep -v '^#' .env | sed 's/^/export /')
 python3 -m src.scripts.generate_predictions --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
 
 # Evaluate extraction results
+source <(grep -v '^#' .env | sed 's/^/export /')
 python3 -m src.scripts.evaluate_extraction --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
 ```
 
