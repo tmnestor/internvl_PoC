@@ -97,13 +97,18 @@ This approach provides several advantages for multi-user systems:
 The system requires a `.env` file for configuration. Create this file in the project root with the following required variables:
 
 ```bash
-# Required environment variables (absolute paths)
-PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC  # Set to your project root path
-INTERNVL_DATA_PATH=/path/to/data
-INTERNVL_OUTPUT_PATH=/path/to/output
-INTERNVL_IMAGE_FOLDER_PATH=/path/to/images
-INTERNVL_MODEL_PATH=/path/to/model
-INTERNVL_PROMPTS_PATH=/path/to/prompts.yaml
+# Base project path - other paths are derived from this
+INTERNVL_PATH=/home/jovyan/nfs_share/username/internvl_PoC  # Set to your project root
+
+# PYTHONPATH for module imports (must match project root)
+PYTHONPATH=${INTERNVL_PATH}  # Will use the value of INTERNVL_PATH
+
+# Required paths (these examples use variable interpolation)
+INTERNVL_DATA_PATH=${INTERNVL_PATH}/data
+INTERNVL_OUTPUT_PATH=${INTERNVL_PATH}/output
+INTERNVL_IMAGE_FOLDER_PATH=${INTERNVL_PATH}/data/sroie/images
+INTERNVL_MODEL_PATH=/path/to/model  # This is often on a different drive
+INTERNVL_PROMPTS_PATH=${INTERNVL_PATH}/prompts.yaml
 
 # Optional settings with defaults
 INTERNVL_PROMPT_NAME=default_receipt_prompt
@@ -111,6 +116,7 @@ INTERNVL_IMAGE_SIZE=448
 INTERNVL_MAX_TILES=8
 INTERNVL_MAX_WORKERS=4
 INTERNVL_MAX_TOKENS=1024
+INTERNVL_TRANSFORMERS_LOG_LEVEL=ERROR  # Hide transformers warnings
 ```
 
 Note: If the `.env` file is missing or lacks required variables, the script will display an error message.
@@ -148,25 +154,28 @@ For the most control and flexibility in remote environments, you can execute the
 
 ```bash
 # Load all environment variables from .env file silently (including PYTHONPATH)
-# Make sure your .env file contains: PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC
+# Make sure your .env file contains: PYTHONPATH=${INTERNVL_PATH}
 source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
+
+# Create a convenience variable for the project root (same as $INTERNVL_PATH)
+PROJECT_ROOT=$INTERNVL_PATH
 
 # Run a module (examples with common operations)
 # Process a single image
-python3 -m src.scripts.internvl_single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
+python3 -m src.scripts.internvl_single --image-path $PROJECT_ROOT/test_receipt.png
 
 # Process multiple images in batch mode
-python3 -m src.scripts.internvl_batch --image-folder-path /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images
+python3 -m src.scripts.internvl_batch --image-folder-path $PROJECT_ROOT/data/sroie/images
 
 # Generate predictions for all images in a directory
 python3 -m src.scripts.generate_predictions \
-  --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images \
-  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test
+  --test-image-dir $PROJECT_ROOT/data/sroie/images \
+  --output-dir $PROJECT_ROOT/output/predictions_test
 
 # Evaluate extraction performance
 python3 -m src.scripts.evaluate_extraction \
-  --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test \
-  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/ground_truth
+  --predictions-dir $PROJECT_ROOT/output/predictions_test \
+  --ground-truth-dir $PROJECT_ROOT/data/sroie/ground_truth
 ```
 
 The environment variable loading command works as follows:
@@ -181,20 +190,20 @@ The `run.sh` script provides automatic environment setup and is particularly use
 
 ```bash
 # Process a single image
-./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
+./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
 
 # Process multiple images
-./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images
+./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images
 
 # Generate predictions
 ./scripts/run.sh --remote predict \
-  --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images \
-  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test
+  --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images \
+  --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
 
 # Evaluate extraction results
 ./scripts/run.sh --remote evaluate \
-  --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test \
-  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/ground_truth
+  --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test \
+  --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/ground_truth
 ```
 
 The `--remote` flag is important for remote execution as it automatically overrides these paths:
@@ -204,7 +213,7 @@ The `--remote` flag is important for remote execution as it automatically overri
 - `INTERNVL_OUTPUT_PATH=/home/jovyan/nfs_share/tod/internvl_PoC/output`
 - `INTERNVL_PROMPTS_PATH=/home/jovyan/nfs_share/tod/internvl_PoC/prompts.yaml`
 
-> **Important**: For the examples above, replace `/home/jovyan/nfs_share/username/` with your actual remote path.
+> **Important**: For the examples above, replace `/home/jovyan/nfs_share/tod/` with your actual remote path.
 
 ## Documentation
 
@@ -273,67 +282,70 @@ internvl_PoC/
 
 Here are detailed examples of running different tasks in remote environments, showing both direct Python module execution and the run.sh script approach:
 
+### First, Set Up the Environment Variables
+
+```bash
+# Load environment variables including PYTHONPATH
+source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
+
+# Create a convenience variable for the project root (same as $INTERNVL_PATH)
+PROJECT_ROOT=$INTERNVL_PATH
+
+# If needed, you can verify the paths are set correctly
+echo "Project root: $PROJECT_ROOT"
+echo "Data path: $INTERNVL_DATA_PATH"
+echo "Output path: $INTERNVL_OUTPUT_PATH"
+```
+
 ### Processing Single Images
 
 ```bash
 # Option 1: Using Python module directly
-# Make sure your .env file contains: PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC
-source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
-python3 -m src.scripts.internvl_single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
+python3 -m src.scripts.internvl_single --image-path $PROJECT_ROOT/test_receipt.png
 
 # Option 2: Using run.sh
-./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
+./scripts/run.sh --remote single --image-path $PROJECT_ROOT/test_receipt.png
 ```
 
 ### Processing Multiple Images (Batch Mode)
 
 ```bash
 # Option 1: Using Python module directly
-# Make sure your .env file contains: PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC
-source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
-python3 -m src.scripts.internvl_batch --image-folder-path /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images
+python3 -m src.scripts.internvl_batch --image-folder-path $PROJECT_ROOT/data/sroie/images
 
 # Option 2: Using run.sh
-./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images
+./scripts/run.sh --remote batch --image-folder-path $PROJECT_ROOT/data/sroie/images
 ```
 
 ### Generating Predictions for a Dataset
 
 ```bash
 # Option 1: Using Python module directly
-# Make sure your .env file contains: PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC
-source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
 python3 -m src.scripts.generate_predictions \
-  --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images \
-  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_sroie
+  --test-image-dir $PROJECT_ROOT/data/sroie/images \
+  --output-dir $PROJECT_ROOT/output/predictions_sroie
 
 # Option 2: Using run.sh
 ./scripts/run.sh --remote predict \
-  --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images \
-  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_sroie
+  --test-image-dir $PROJECT_ROOT/data/sroie/images \
+  --output-dir $PROJECT_ROOT/output/predictions_sroie
 ```
 
 ### Evaluating Extraction Performance
 
 ```bash
 # Option 1: Using Python module directly
-# Make sure your .env file contains: PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC
-source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
 python3 -m src.scripts.evaluate_extraction \
-  --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_sroie \
-  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/ground_truth
+  --predictions-dir $PROJECT_ROOT/output/predictions_sroie \
+  --ground-truth-dir $PROJECT_ROOT/data/sroie/ground_truth
 
 # Option 2: Using run.sh
 ./scripts/run.sh --remote evaluate \
-  --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_sroie \
-  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/ground_truth
+  --predictions-dir $PROJECT_ROOT/output/predictions_sroie \
+  --ground-truth-dir $PROJECT_ROOT/output/predictions_sroie
 ```
 
-> **Important**: Replace `/home/jovyan/nfs_share/username/` with your actual remote path. You may want to create a shorthand variable for readability in your scripts:
-> ```bash
-> REMOTE_ROOT=/home/jovyan/nfs_share/username/internvl_PoC
-> python3 -m src.scripts.internvl_single --image-path $REMOTE_ROOT/test_receipt.png
-> ```
+> **Important**: The examples above use variables like `$PROJECT_ROOT` that are loaded from your .env file. Make sure your .env file contains the correct paths for your environment.
 
 
 ## SROIE Dataset Evaluation
@@ -353,19 +365,21 @@ There are two ways to evaluate the SROIE dataset in a remote environment:
 #### Option 1: Using Python Modules Directly
 
 ```bash
-# Setup environment
-# Make sure your .env file contains: PYTHONPATH=/home/jovyan/nfs_share/username/internvl_PoC
+# Load environment variables including PYTHONPATH
 source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
+
+# Create a convenience variable for the project root
+PROJECT_ROOT=$INTERNVL_PATH
 
 # Step 1: Generate predictions for all SROIE images
 python3 -m src.scripts.generate_predictions \
-  --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images \
-  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_sroie
+  --test-image-dir $PROJECT_ROOT/data/sroie/images \
+  --output-dir $PROJECT_ROOT/output/predictions_sroie
 
 # Step 2: Evaluate the predictions against ground truth
 python3 -m src.scripts.evaluate_extraction \
-  --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_sroie \
-  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/ground_truth
+  --predictions-dir $PROJECT_ROOT/output/predictions_sroie \
+  --ground-truth-dir $PROJECT_ROOT/data/sroie/ground_truth
 ```
 
 #### Option 2: Using the evaluate_sroie.sh Script
