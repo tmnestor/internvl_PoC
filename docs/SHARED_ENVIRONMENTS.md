@@ -177,6 +177,75 @@ When multiple users can modify a shared environment:
 3. **Communicate changes** to other users before making them
 4. **Consider setting up a staging environment** for testing changes
 
+## Updating the Shared Environment
+
+As the designated administrator for the shared environment, follow these steps to update it:
+
+### 1. Update the Environment YAML File
+
+First, update the `internvl_env.yml` file with any new dependencies or version changes:
+
+```yaml
+name: internvl_env
+# ... other settings
+dependencies:
+  - python=3.11
+  - new_package=1.2.3
+  # ... other dependencies
+prefix: /efs/shared/.conda/envs/internvl_env
+```
+
+### 2. Notify Users Before Making Changes
+
+Send a notification to all users with:
+- Planned update time
+- Expected downtime
+- List of changes being made
+- Any required actions on their part
+
+### 3. Update the Environment
+
+```bash
+# Update the environment using the YAML file
+conda env update -f internvl_env.yml -p /efs/shared/.conda/envs/internvl_env --prune
+
+# The --prune flag removes dependencies that are no longer listed in the YAML
+```
+
+### 4. Fix Permissions After Update
+
+```bash
+# Ensure proper permissions after update
+chmod -R 2770 /efs/shared/.conda/envs/internvl_env
+chgrp -R users /efs/shared/.conda/envs/internvl_env
+```
+
+### 5. Test the Updated Environment
+
+```bash
+# Activate the environment
+conda activate /efs/shared/.conda/envs/internvl_env
+
+# Run verification tests
+python -c "import new_package; print(new_package.__version__)"
+python verify_env.py  # If you have a verification script
+```
+
+### 6. Document the Changes
+
+Keep a record of all updates in a changelog, including:
+- Date of update
+- Packages added/removed/updated
+- Any breaking changes
+- Compatibility notes
+
+### 7. Notify Users of Completed Update
+
+Send a confirmation message that the update is complete with:
+- Summary of changes made
+- Any new usage instructions
+- Contact point for reporting issues
+
 ## Troubleshooting
 
 ### Permission Denied Errors
