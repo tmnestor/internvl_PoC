@@ -40,6 +40,19 @@ The system works with both synthetic and real-world datasets:
 - **Synthetic Data**: Generated receipt images with corresponding ground truth data
 - **Custom Data**: Support for processing user-provided images
 
+## Evaluation Criteria
+
+The system evaluates extraction performance using several key metrics:
+
+- **Field Accuracy**: Percentage of correctly extracted fields across all documents
+- **Precision**: Ratio of correctly extracted fields to total extracted fields
+- **Recall**: Ratio of correctly extracted fields to total fields in ground truth
+- **F1 Score**: Harmonic mean of precision and recall, balancing both metrics
+- **Field-Level Performance**: Separate evaluation for different field types (dates, prices, store names)
+- **Normalization Impact**: Evaluation with and without field normalization to measure its effect
+
+Evaluation results are stored in structured formats (JSON/CSV) and visualized with performance graphs.
+
 ## Project Status
 
 This project serves as a proof-of-concept demonstrating the capabilities of InternVL2.5 for structured data extraction from images. It provides both research and practical application value for document understanding tasks.
