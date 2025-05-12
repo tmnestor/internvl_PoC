@@ -108,12 +108,24 @@ def generate_receipt(output_dir, ground_truth_dir, include_gst=True, receipt_id=
     receipt.save(image_path)
     print(f"Created receipt: {image_path}")
     
-    # Save ground truth for information extraction
+    # Save ground truth for information extraction with the expected field names
     if ground_truth_dir:
         os.makedirs(ground_truth_dir, exist_ok=True)
+
+        # Convert to the expected field name format
+        formatted_ground_truth = {
+            "date_value": ground_truth["date"],
+            "store_name_value": ground_truth["store_name"],
+            "tax_value": ground_truth["tax"],
+            "total_value": ground_truth["total"],
+            "prod_item_value": ground_truth["items"],
+            "prod_quantity_value": ground_truth["quantities"],
+            "prod_price_value": ground_truth["prices"]
+        }
+
         ground_truth_path = os.path.join(ground_truth_dir, f"{receipt_id}.json")
         with open(ground_truth_path, 'w') as f:
-            json.dump(ground_truth, f, indent=2)
+            json.dump(formatted_ground_truth, f, indent=2)
         print(f"Created ground truth file: {ground_truth_path}")
     
     return image_path, ground_truth

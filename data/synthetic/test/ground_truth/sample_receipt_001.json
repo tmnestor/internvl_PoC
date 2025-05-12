@@ -1,0 +1,27 @@
+{
+  "date_value": "05/05/2025",
+  "store_name_value": "WOOLWORTHS",
+  "tax_value": "12.82",
+  "total_value": "140.98",
+  "prod_item_value": [
+    "Milk 2L",
+    "Chicken Breast",
+    "Rice 1kg",
+    "Bread",
+    "Chocolate"
+  ],
+  "prod_quantity_value": [
+    "2",
+    "3",
+    "2",
+    "2",
+    "1"
+  ],
+  "prod_price_value": [
+    "13.96",
+    "2.98",
+    "22.30",
+    "18.73",
+    "22.06"
+  ]
+}

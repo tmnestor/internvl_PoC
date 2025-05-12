@@ -20,6 +20,16 @@ InternVL Evaluation processes images to extract structured data fields like date
 
 ## Installation
 
+## Kubeflow Pipelines (KFP) Compatibility
+
+This system now supports Kubeflow Pipelines (KFP) compatibility through:
+
+1. **Relative Path Support**: All paths can now be specified relative to the project root
+2. **Module Invocation Pattern**: Enforces consistent import behavior across environments
+3. **Environment Detection**: Automatically adapts to different execution environments
+
+See the [KFP Compatibility Guide](docs/KFP_COMPATIBILITY.md) for detailed information.
+
 ### Setting Up Conda Environment on Multi-User Linux Systems
 
 For multi-user Linux systems, it's important to set up isolated environments that don't interfere with other users while efficiently managing resources:
@@ -97,18 +107,22 @@ This approach provides several advantages for multi-user systems:
 The system requires a `.env` file for configuration. Create this file in the project root with the following required variables:
 
 ```bash
-# Base project path - other paths are derived from this
-INTERNVL_PATH=/home/jovyan/nfs_share/username/internvl_PoC  # Set to your project root
+# Project root path - base for all relative paths
+INTERNVL_PROJECT_ROOT=.
 
-# PYTHONPATH for module imports (must match project root)
-PYTHONPATH=${INTERNVL_PATH}  # Will use the value of INTERNVL_PATH
+# Required paths (relative to project root for KFP compatibility)
+INTERNVL_DATA_PATH=data
+INTERNVL_OUTPUT_PATH=output
+INTERNVL_SOURCE_PATH=src
+INTERNVL_PROMPTS_PATH=prompts.yaml
 
-# Required paths (these examples use variable interpolation)
-INTERNVL_DATA_PATH=${INTERNVL_PATH}/data
-INTERNVL_OUTPUT_PATH=${INTERNVL_PATH}/output
-INTERNVL_IMAGE_FOLDER_PATH=${INTERNVL_PATH}/data/sroie/images
+# Derived paths
+INTERNVL_SYNTHETIC_DATA_PATH=${INTERNVL_DATA_PATH}/synthetic
+INTERNVL_SROIE_DATA_PATH=${INTERNVL_DATA_PATH}/sroie
+INTERNVL_IMAGE_FOLDER_PATH=${INTERNVL_SYNTHETIC_DATA_PATH}/images
+
+# Path/name of the InternVL model to use (typically absolute)
 INTERNVL_MODEL_PATH=/path/to/model  # This is often on a different drive
-INTERNVL_PROMPTS_PATH=${INTERNVL_PATH}/prompts.yaml
 
 # Optional settings with defaults
 INTERNVL_PROMPT_NAME=default_receipt_prompt
@@ -148,34 +162,33 @@ default_receipt_prompt: |
 
 This system can be run in two ways: via the run.sh script or by directly executing Python modules. For remote execution environments, both approaches work equally well.
 
-### Running Python Modules Directly (Recommended for Remote Environments)
+### Running Python Modules Directly (Recommended for All Environments)
 
-For the most control and flexibility in remote environments, you can execute the Python modules directly:
+For the most control and flexibility, you can execute the Python modules directly using the module invocation pattern:
 
 ```bash
-# Load all environment variables from .env file silently (including PYTHONPATH)
-# Make sure your .env file contains: PYTHONPATH=${INTERNVL_PATH}
+# Load all environment variables from .env file silently
 source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
-
-# Create a convenience variable for the project root (same as $INTERNVL_PATH)
-PROJECT_ROOT=$INTERNVL_PATH
 
 # Run a module (examples with common operations)
 # Process a single image
-python3 -m src.scripts.internvl_single --image-path $PROJECT_ROOT/test_receipt.png
+python -m src.scripts.internvl_single --image-path test_receipt.png
 
 # Process multiple images in batch mode
-python3 -m src.scripts.internvl_batch --image-folder-path $PROJECT_ROOT/data/sroie/images
+python -m src.scripts.internvl_batch --image-folder-path data/sroie/images
 
 # Generate predictions for all images in a directory
-python3 -m src.scripts.generate_predictions \
-  --test-image-dir $PROJECT_ROOT/data/sroie/images \
-  --output-dir $PROJECT_ROOT/output/predictions_test
+python -m src.scripts.generate_predictions \
+  --test-image-dir data/sroie/images \
+  --output-dir output/predictions_test
 
 # Evaluate extraction performance
-python3 -m src.scripts.evaluate_extraction \
-  --predictions-dir $PROJECT_ROOT/output/predictions_test \
-  --ground-truth-dir $PROJECT_ROOT/data/sroie/ground_truth
+python -m src.scripts.evaluate_extraction \
+  --predictions-dir output/predictions_test \
+  --ground-truth-dir data/sroie/ground_truth
+
+# Test the path resolution system
+python -m src.scripts.test_path_resolution
 ```
 
 The environment variable loading command works as follows:
@@ -278,74 +291,74 @@ internvl_PoC/
 └── verify_env.py         # Script to verify environment
 ```
 
-## Command Examples for Remote Environments
+## Command Examples for All Environments
 
-Here are detailed examples of running different tasks in remote environments, showing both direct Python module execution and the run.sh script approach:
+Here are detailed examples of running different tasks, showing both the KFP-compatible module invocation pattern and the run.sh script approach:
 
 ### First, Set Up the Environment Variables
 
 ```bash
-# Load environment variables including PYTHONPATH
+# Load environment variables
 source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
 
-# Create a convenience variable for the project root (same as $INTERNVL_PATH)
-PROJECT_ROOT=$INTERNVL_PATH
-
 # If needed, you can verify the paths are set correctly
-echo "Project root: $PROJECT_ROOT"
-echo "Data path: $INTERNVL_DATA_PATH"
-echo "Output path: $INTERNVL_OUTPUT_PATH"
+echo "Project root: ${INTERNVL_PROJECT_ROOT}"
+echo "Data path: ${INTERNVL_DATA_PATH}"
+echo "Output path: ${INTERNVL_OUTPUT_PATH}"
+
+# Verify path resolution is working
+python -m src.scripts.test_path_resolution
 ```
 
 ### Processing Single Images
 
 ```bash
-# Option 1: Using Python module directly
-python3 -m src.scripts.internvl_single --image-path $PROJECT_ROOT/test_receipt.png
+# Option 1: Using Python module directly with KFP compatibility
+python -m src.scripts.internvl_single --image-path test_receipt.png
 
 # Option 2: Using run.sh
-./scripts/run.sh --remote single --image-path $PROJECT_ROOT/test_receipt.png
+./scripts/run.sh single --image-path test_receipt.png
 ```
 
 ### Processing Multiple Images (Batch Mode)
 
 ```bash
-# Option 1: Using Python module directly
-python3 -m src.scripts.internvl_batch --image-folder-path $PROJECT_ROOT/data/sroie/images
+# Option 1: Using Python module directly with KFP compatibility
+python -m src.scripts.internvl_batch --image-folder-path data/sroie/images
 
 # Option 2: Using run.sh
-./scripts/run.sh --remote batch --image-folder-path $PROJECT_ROOT/data/sroie/images
+./scripts/run.sh batch --image-folder-path data/sroie/images
 ```
 
 ### Generating Predictions for a Dataset
 
 ```bash
-# Option 1: Using Python module directly
-python3 -m src.scripts.generate_predictions \
-  --test-image-dir $PROJECT_ROOT/data/sroie/images \
-  --output-dir $PROJECT_ROOT/output/predictions_sroie
+# Option 1: Using Python module directly with KFP compatibility
+python -m src.scripts.generate_predictions \
+  --test-image-dir data/sroie/images \
+  --output-dir output/predictions_sroie
 
 # Option 2: Using run.sh
-./scripts/run.sh --remote predict \
-  --test-image-dir $PROJECT_ROOT/data/sroie/images \
-  --output-dir $PROJECT_ROOT/output/predictions_sroie
+./scripts/run.sh predict \
+  --test-image-dir data/sroie/images \
+  --output-dir output/predictions_sroie
 ```
 
 ### Evaluating Extraction Performance
 
 ```bash
-# Option 1: Using Python module directly
-python3 -m src.scripts.evaluate_extraction \
-  --predictions-dir $PROJECT_ROOT/output/predictions_sroie \
-  --ground-truth-dir $PROJECT_ROOT/data/sroie/ground_truth
+# Option 1: Using Python module directly with KFP compatibility
+python -m src.scripts.evaluate_extraction \
+  --predictions-dir output/predictions_sroie \
+  --ground-truth-dir data/sroie/ground_truth
 
 # Option 2: Using run.sh
-./scripts/run.sh --remote evaluate \
-  --predictions-dir $PROJECT_ROOT/output/predictions_sroie \
-  --ground-truth-dir $PROJECT_ROOT/output/predictions_sroie
+./scripts/run.sh evaluate \
+  --predictions-dir output/predictions_sroie \
+  --ground-truth-dir data/sroie/ground_truth
 ```
 
-> **Important**: The examples above use variables like `$PROJECT_ROOT` that are loaded from your .env file. Make sure your .env file contains the correct paths for your environment.
+> **Important**: The examples above use relative paths to the project root, which will be resolved based on the INTERNVL_PROJECT_ROOT environment variable. Make sure your .env file is properly configured.
 
 
 ## SROIE Dataset Evaluation
@@ -358,28 +371,25 @@ The SROIE dataset is located in the `data/sroie` directory with the following st
 - `data/sroie/images/*.jpg` - Receipt images
 - `data/sroie/ground_truth/*.json` - Ground truth files with labeled fields
 
-### Running SROIE Evaluation in a Remote Environment
+### Running SROIE Evaluation
 
-There are two ways to evaluate the SROIE dataset in a remote environment:
+There are two ways to evaluate the SROIE dataset:
 
-#### Option 1: Using Python Modules Directly
+#### Option 1: Using Python Modules Directly (KFP-Compatible)
 
 ```bash
-# Load environment variables including PYTHONPATH
+# Load environment variables
 source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
 
-# Create a convenience variable for the project root
-PROJECT_ROOT=$INTERNVL_PATH
-
 # Step 1: Generate predictions for all SROIE images
-python3 -m src.scripts.generate_predictions \
-  --test-image-dir $PROJECT_ROOT/data/sroie/images \
-  --output-dir $PROJECT_ROOT/output/predictions_sroie
+python -m src.scripts.generate_predictions \
+  --test-image-dir data/sroie/images \
+  --output-dir output/predictions_sroie
 
 # Step 2: Evaluate the predictions against ground truth
-python3 -m src.scripts.evaluate_extraction \
-  --predictions-dir $PROJECT_ROOT/output/predictions_sroie \
-  --ground-truth-dir $PROJECT_ROOT/data/sroie/ground_truth
+python -m src.scripts.evaluate_extraction \
+  --predictions-dir output/predictions_sroie \
+  --ground-truth-dir data/sroie/ground_truth
 ```
 
 #### Option 2: Using the evaluate_sroie.sh Script
@@ -387,10 +397,7 @@ python3 -m src.scripts.evaluate_extraction \
 For convenience, you can use the included evaluation script which performs both steps:
 
 ```bash
-# First, edit the script to use remote mode
-sed -i 's/MODE="--local"/MODE="--remote"/' scripts/evaluate_sroie.sh
-
-# Then run the script
+# Run the script with KFP-compatible paths
 ./scripts/evaluate_sroie.sh
 ```
 

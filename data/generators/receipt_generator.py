@@ -1627,31 +1627,31 @@ def generate_test_dataset(output_dir, num_receipts=20, image_size=2048, seed=42)
             tax = round(subtotal / 11, 2)  # GST is 1/11 of the total in Australia
             total = subtotal
             
-            # Create ground truth data for information extraction
+            # Create ground truth data for information extraction using expected field names
             ground_truth = {
-                "store_name": store_name,
-                "date": date,
-                "items": items,
-                "quantities": quantities,
-                "prices": prices,
-                "tax": f"{tax:.2f}",
-                "total": f"{total:.2f}"
+                "date_value": date,
+                "store_name_value": store_name,
+                "tax_value": f"{tax:.2f}",
+                "total_value": f"{total:.2f}",
+                "prod_item_value": items,
+                "prod_quantity_value": quantities,
+                "prod_price_value": prices
             }
-            
+
             # Save ground truth for information extraction
             ground_truth_path = test_ground_truth_dir / f"{receipt_id}.json"
             with open(ground_truth_path, 'w') as f:
                 json.dump(ground_truth, f, indent=2)
             
-            # Add to dataset summary
+            # Add to dataset summary with updated field names
             data.append({
                 "filename": filename,
                 "receipt_id": receipt_id,
-                "store_name": store_name,
-                "date": date,
+                "store_name_value": store_name,
+                "date_value": date,
                 "items_count": len(items),
-                "tax": f"{tax:.2f}",
-                "total": f"{total:.2f}"
+                "tax_value": f"{tax:.2f}",
+                "total_value": f"{total:.2f}"
             })
             
             # Progress update
@@ -1667,7 +1667,7 @@ def generate_test_dataset(output_dir, num_receipts=20, image_size=2048, seed=42)
     
     # Print statistics
     print(f"\nDataset generation complete: {num_receipts} receipts")
-    print(f"Store distribution: {df['store_name'].value_counts().head()}")
+    print(f"Store distribution: {df['store_name_value'].value_counts().head()}")
     print(f"Average items per receipt: {df['items_count'].mean():.1f}")
     
     # Print directory structure

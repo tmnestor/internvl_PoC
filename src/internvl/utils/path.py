@@ -1,7 +1,10 @@
 """
 Path management utilities for InternVL Evaluation
 
-This module provides centralized path resolution and management.
+This module provides centralized path resolution and management supporting both
+absolute and relative paths for KFP (Kubeflow Pipelines) compatibility.
+
+It also includes utilities for enforcing module invocation patterns for scripts.
 """
 
 import logging
@@ -18,33 +21,119 @@ logger = logging.getLogger(__name__)
 # First make sure we can import from our own project
 import sys
 
+# Determine project root path - for both direct execution and module invocation
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '../../..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
+
+# Convert to Path object for easier path manipulation
+project_root = Path(project_root)
+
+def enforce_module_invocation(expected_package=None):
+    """
+    Enforce that a script is invoked as a module using the pattern:
+    `python -m module1.module2`
+
+    This function should be called at the beginning of any script that needs
+    to enforce the module invocation pattern.
+
+    Args:
+        expected_package: The expected package name for the script.
+                          If None, just checks that __package__ is not None.
+
+    Raises:
+        SystemExit: If the script is not invoked as a module.
+    """
+    import inspect
+    import sys
+
+    # Get the caller's frame
+    caller_frame = inspect.currentframe().f_back
+    caller_module = inspect.getmodule(caller_frame)
+
+    # Check if the script was invoked as a module
+    if caller_module.__package__ is None:
+        script_name = caller_frame.f_globals.get('__file__', 'script.py')
+        module_path = expected_package if expected_package else "appropriate.module.path"
+
+        print(f"Error: This script should be run using the module invocation pattern:", file=sys.stderr)
+        print(f"  python -m {module_path}", file=sys.stderr)
+        print(f"Instead of:", file=sys.stderr)
+        print(f"  python {script_name}", file=sys.stderr)
+        sys.exit(1)
+
+    # If an expected package was provided, check it matches
+    if expected_package and caller_module.__package__ != expected_package:
+        print(f"Error: This script should be run using the module invocation pattern:", file=sys.stderr)
+        print(f"  python -m {expected_package}", file=sys.stderr)
+        print(f"Instead of:", file=sys.stderr)
+        print(f"  python -m {caller_module.__package__}", file=sys.stderr)
+        sys.exit(1)
+
+def resolve_path(env_var, default_relative_path=None):
+    """
+    Resolve a path from environment variable relative to project root.
+    Supports both absolute and relative paths for KFP compatibility.
+
+    Args:
+        env_var: The environment variable name to resolve
+        default_relative_path: Default relative path if env var not found
+
+    Returns:
+        Path object for the resolved path
+    """
+    # Get project root (assume current directory if not specified)
+    env_project_root = os.environ.get("INTERNVL_PROJECT_ROOT", ".")
+    # Convert to absolute path if needed
+    proj_root = Path(env_project_root).absolute()
+
+    # Get path from environment variable
+    env_key = env_var if env_var.startswith("INTERNVL_") else f"INTERNVL_{env_var}"
+    path_value = os.environ.get(env_key, default_relative_path)
+
+    if not path_value:
+        return None
+
+    path_obj = Path(path_value)
+
+    # If it's already an absolute path, return it as is (backwards compatibility)
+    if path_obj.is_absolute():
+        logger.warning(f"Using absolute path for {env_key}={path_value}. For KFP compatibility, consider using relative paths.")
+        return path_obj
+
+    # Return resolved absolute path relative to project root
+    return proj_root / path_value
 
 # Instead of importing get_env, we'll define a simplified version here
 # to avoid circular imports
 def get_env_for_path(key, default=None, required=False):
     """
     Simplified environment variable getter for path module.
+    Supports both absolute paths and paths relative to project root.
     This avoids circular imports with config.py.
     """
     # Add INTERNVL_ prefix if not present
     if not key.startswith("INTERNVL_"):
         key = f"INTERNVL_{key}"
-    
-    # Try to get the value
-    value = os.getenv(key)
-    
-    if value is None:
+
+    # Try to resolve the path from environment
+    path = resolve_path(key)
+
+    # If not found in environment, use default
+    if path is None:
         if required:
             # Print environment variables for debugging
             env_keys = [k for k in os.environ.keys() if k.startswith("INTERNVL_")]
             raise ValueError(f"Required environment variable '{key}' is not set (available: {env_keys})")
         return default
-        
-    return value
+
+    # Check if it's an output path that might need to be created
+    if "OUTPUT" in key and not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Created directory for {key}: {path}")
+
+    return str(path)
 
 class PathManager:
     """
@@ -61,20 +150,24 @@ class PathManager:
     """
     
     def __init__(self):
-        """Initialize the PathManager with proper environment detection."""
+        """
+        Initialize the PathManager with proper environment detection.
+        Supports both local development and KFP (Kubeflow Pipelines) environments.
+        """
         # Detect environment and set up base paths
         self.environment = get_env_for_path("ENVIRONMENT", "development")
         self.base_paths = {}
         self.env_vars = {}
-        
+
         # Load environment variables
         self._load_environment_variables()
-        
+
         # Configure base paths based on detected environment
         self._configure_base_paths()
-        
+
         logger.info(f"PathManager initialized in {self.environment} environment")
         logger.info(f"Base paths: {self.base_paths}")
+        logger.info(f"Project root: {project_root}")
     
     def _load_environment_variables(self):
         """Load environment variables for path resolution."""
@@ -84,40 +177,36 @@ class PathManager:
                 self.env_vars[key] = value
     
     def _configure_base_paths(self):
-        """Configure base paths for different resource types."""
+        """
+        Configure base paths for different resource types.
+
+        Supports both absolute paths and paths relative to project root
+        for KFP (Kubeflow Pipelines) compatibility.
+        """
         # Get current module directory as fallback for source path
         module_dir = Path(__file__).parent.parent.parent
-        
-        # Configure base paths from environment variables
+
+        # Configure base paths from environment variables using resolve_path
         self.base_paths = {
-            "source": Path(get_env_for_path("SOURCE_PATH", str(module_dir))),
-            "data": Path(get_env_for_path("DATA_PATH", required=True)),
-            "output": Path(get_env_for_path("OUTPUT_PATH", required=True)),
+            "source": resolve_path("SOURCE_PATH", str(module_dir.relative_to(project_root))),
+            "data": resolve_path("DATA_PATH", "data"),
+            "output": resolve_path("OUTPUT_PATH", "output"),
             # Models are accessed directly via INTERNVL_MODEL_PATH
         }
-        
-        # Verify all paths are absolute and exist
+
+        # Verify all paths are valid
         missing_paths = []
         for path_type, path in self.base_paths.items():
-            # Skip source path validation
-            if path_type == "source":
-                continue
-                
             # Check if path is provided
-            if not path or str(path).strip() == "":
+            if not path:
                 missing_paths.append(path_type)
                 continue
-                
-            # Check if path is absolute
-            if not os.path.isabs(str(path)):
-                logger.error(f"{path_type.upper()} PATH MUST BE ABSOLUTE: {path}")
-                missing_paths.append(path_type)
-                
+
         # If any critical paths are missing, raise error
         if missing_paths:
             paths_str = ", ".join([f"INTERNVL_{p.upper()}_PATH" for p in missing_paths])
-            raise ValueError(f"Missing required absolute paths: {paths_str}. These must be set in environment variables.")
-        
+            raise ValueError(f"Missing required paths: {paths_str}. These must be set in environment variables.")
+
         # Create output directory if it doesn't exist
         os.makedirs(self.base_paths["output"], exist_ok=True)
     
@@ -158,8 +247,7 @@ class PathManager:
     
     def get_prompt_path(self) -> Path:
         """Get path to the prompts YAML file."""
-        prompts_path = get_env_for_path("PROMPTS_PATH", required=True)
-        return Path(prompts_path)
+        return resolve_path("PROMPTS_PATH", "prompts.yaml")
     
     def get_synthetic_data_path(self) -> Path:
         """Get path to the synthetic data directory."""
@@ -179,5 +267,8 @@ try:
     path_manager = PathManager()
 except Exception as e:
     import logging
-    logging.getLogger(__name__).error(f"Error initializing PathManager: {e}")
+    logger = logging.getLogger(__name__)
+    logger.error(f"Error initializing PathManager: {e}")
+    logger.error("Make sure your environment variables are correctly set in .env file")
+    logger.error("For KFP compatibility, use relative paths with INTERNVL_PROJECT_ROOT=.")
     path_manager = None

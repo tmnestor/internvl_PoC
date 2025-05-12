@@ -1,0 +1,27 @@
+{
+  "date_value": "29/04/2025",
+  "store_name_value": "IGA",
+  "tax_value": "13.56",
+  "total_value": "149.18",
+  "prod_item_value": [
+    "Bananas 1kg",
+    "Chocolate",
+    "Milk 2L",
+    "Chicken Breast",
+    "Bread"
+  ],
+  "prod_quantity_value": [
+    "2",
+    "2",
+    "2",
+    "2",
+    "1"
+  ],
+  "prod_price_value": [
+    "22.74",
+    "20.56",
+    "23.56",
+    "2.85",
+    "9.76"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "date_value": "13/04/2025",
+  "store_name_value": "WOOLWORTHS",
+  "tax_value": "13.92",
+  "total_value": "153.17",
+  "prod_item_value": [
+    "Rice 1kg",
+    "Chicken Breast",
+    "Coffee 200g",
+    "Milk 2L",
+    "Eggs 12pk"
+  ],
+  "prod_quantity_value": [
+    "3",
+    "2",
+    "2",
+    "3",
+    "1"
+  ],
+  "prod_price_value": [
+    "15.90",
+    "20.20",
+    "7.86",
+    "8.38",
+    "24.21"
+  ]
+}

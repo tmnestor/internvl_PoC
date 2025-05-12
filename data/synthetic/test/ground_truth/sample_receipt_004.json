@@ -1,0 +1,27 @@
+{
+  "date_value": "03/05/2025",
+  "store_name_value": "ALDI",
+  "tax_value": "12.47",
+  "total_value": "137.14",
+  "prod_item_value": [
+    "Milk 2L",
+    "Coffee 200g",
+    "Rice 1kg",
+    "Bananas 1kg",
+    "Chocolate"
+  ],
+  "prod_quantity_value": [
+    "1",
+    "3",
+    "3",
+    "2",
+    "2"
+  ],
+  "prod_price_value": [
+    "17.73",
+    "10.74",
+    "11.73",
+    "5.44",
+    "20.56"
+  ]
+}

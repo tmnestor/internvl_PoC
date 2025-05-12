@@ -1,0 +1,27 @@
+{
+  "date_value": "16/04/2025",
+  "store_name_value": "KMART",
+  "tax_value": "14.81",
+  "total_value": "162.88",
+  "prod_item_value": [
+    "Rice 1kg",
+    "Chicken Breast",
+    "Coffee 200g",
+    "Chocolate",
+    "Eggs 12pk"
+  ],
+  "prod_quantity_value": [
+    "3",
+    "2",
+    "1",
+    "2",
+    "3"
+  ],
+  "prod_price_value": [
+    "9.80",
+    "8.04",
+    "20.04",
+    "18.50",
+    "20.12"
+  ]
+}

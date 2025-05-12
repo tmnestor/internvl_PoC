@@ -18,7 +18,7 @@ To generate basic synthetic receipts for testing:
 conda activate internvl_env
 
 # Use Python module execution
-python -m src.internvl.data.generators.simple_receipt_generator --num_receipts 20 --include_gst
+PYTHONPATH=$PWD python3 -m src.internvl.data.generators.simple_receipt_generator --num_receipts 20 --include_gst
 
 # Or use the run.sh helper script (if implemented)
 ./run.sh generate-data --type simple --num_receipts 20 --include_gst
@@ -99,15 +99,24 @@ The ground truth JSON files have the following structure for information extract
 
 ```json
 {
-  "store_name": "WOOLWORTHS",
-  "date": "01/05/2023",
-  "items": ["Milk 2L", "Bread", "Eggs 12pk"],
-  "quantities": ["2", "1", "3"],
-  "prices": ["4.50", "3.80", "7.65"],
-  "tax": "1.45",
-  "total": "15.95"
+  "date_value": "01/05/2023",
+  "store_name_value": "WOOLWORTHS",
+  "tax_value": "1.45",
+  "total_value": "15.95",
+  "prod_item_value": ["Milk 2L", "Bread", "Eggs 12pk"],
+  "prod_quantity_value": ["2", "1", "3"],
+  "prod_price_value": ["4.50", "3.80", "7.65"]
 }
 ```
+
+This format matches the expected field names used by the InternVL model for Australian receipts. The field names align with:
+1. date_value: The date of purchase
+2. store_name_value: The name of the Australian store
+3. tax_value: The GST (tax) amount
+4. total_value: The total purchase amount
+5. prod_item_value: List of product items purchased
+6. prod_quantity_value: List of quantities for each product
+7. prod_price_value: List of prices for each product
 
 ## Notes
 
