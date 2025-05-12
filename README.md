@@ -184,15 +184,27 @@ The environment mode affects how paths are handled:
 
 This feature is especially useful when developing locally but executing on a remote server with different filesystem paths. You don't need to modify your .env file when switching between environments.
 
-### Direct Python Module Execution (Advanced Method)
+### Advanced Execution Methods
+
+There are several ways to run the InternVL scripts, depending on your needs and environment:
+
+#### 1. Simplified Script Execution (Recommended)
+
+The `run.sh` script handles all environment setup and provides a consistent interface:
+
+```bash
+# Local execution
+./scripts/run.sh single --image-path /path/to/local/image.jpg
+
+# Remote execution (automatically uses remote paths)
+./scripts/run.sh --remote single --image-path /path/to/remote/image.jpg
+```
+
+#### 2. Direct Python Module Execution
 
 For more control and transparency, you can run the Python modules directly:
 
 ```bash
-# Method 1: Using run.sh for environment setup
-./scripts/run.sh single --image-path /path/to/image.jpg
-
-# Method 2: Manual Python execution with proper environment setup
 # First, set the PYTHONPATH to include the project directory
 export PYTHONPATH=/path/to/project/root
 
@@ -203,30 +215,38 @@ source <(grep -v '^#' .env | sed 's/^/export /')
 python3 -m src.scripts.internvl_single --image-path /path/to/image.jpg
 ```
 
-The second method uses this command to load environment variables:
+This method uses a command to properly load and expand environment variables:
 - `grep -v '^#' .env` - Filters out comment lines from the .env file
 - `sed 's/^/export /'` - Adds "export " to the beginning of each line
 - `source <( ... )` - Sources the resulting commands into your current shell
 
 This ensures that all environment variables, including those with variable interpolation like `${INTERNVL_PATH}/data`, are properly expanded and available to the Python script.
 
-Other modules can be run similarly:
+#### 3. Environment-Specific Examples
 
+**Local Environment:**
 ```bash
-# Process multiple images
-source <(grep -v '^#' .env | sed 's/^/export /')
-python3 -m src.scripts.internvl_batch --image-folder-path /path/to/images
+# Option 1: Using run.sh
+./scripts/run.sh --local single --image-path /Users/username/Desktop/internvl_PoC/test_receipt.png
 
-# Generate predictions
+# Option 2: Direct execution
+export PYTHONPATH=/Users/username/Desktop/internvl_PoC
 source <(grep -v '^#' .env | sed 's/^/export /')
-python3 -m src.scripts.generate_predictions --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
-
-# Evaluate extraction results
-source <(grep -v '^#' .env | sed 's/^/export /')
-python3 -m src.scripts.evaluate_extraction --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
+python3 -m src.scripts.internvl_single --image-path /Users/username/Desktop/internvl_PoC/test_receipt.png
 ```
 
-The `-m` flag tells Python to run the module as a script, which ensures proper imports and package structure.
+**Remote Environment:**
+```bash
+# Option 1: Using run.sh with automatic path remapping
+./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
+
+# Option 2: Manual environment setup for remote paths
+# Create a .env.remote file with remote paths and use it:
+source <(grep -v '^#' .env.remote | sed 's/^/export /')
+python3 -m src.scripts.internvl_single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
+```
+
+The `-m` flag in these examples tells Python to run the module as a script, which ensures proper imports and package structure.
 
 For a detailed comparison of both approaches, see [RUNNING.md](RUNNING.md).
 
@@ -247,18 +267,11 @@ The `prompts.yaml` file is central to the extraction functionality:
 
 This flexible prompt system allows you to tailor extraction for different document types or information needs without changing code.
 
-## Testing
-
-Run the test suite:
-
-```bash
-pytest
-```
 
 ## Directory Structure
 
 ```
-internvl-evaluation/
+internvl_PoC/
 ├── src/                  # Source code
 │   ├── internvl/         # Core package
 │   │   ├── config/       # Configuration management
@@ -273,39 +286,93 @@ internvl-evaluation/
 │       ├── generate_predictions.py  # Generate predictions
 │       └── evaluate_extraction.py   # Evaluate results
 ├── data/                 # Data directories
+│   ├── generators/       # Scripts for generating synthetic data
+│   ├── sroie/            # SROIE dataset
+│   │   ├── ground_truth/ # Ground truth JSON files
+│   │   └── images/       # Receipt images for testing
 │   └── synthetic/        # Synthetic data for testing
 │       ├── ground_truth/ # Ground truth JSON files
 │       └── images/       # Receipt images for testing
+├── docs/                 # Documentation
+│   ├── RUNNING.md        # Documentation for running commands
+│   ├── SETUP_INSTRUCTIONS.md # Setup instructions
+│   ├── SHARED_COMPUTE.md # Guide for running on shared compute resources
+│   ├── SHARED_ENVIRONMENTS.md # Guide for shared conda environments
+│   └── VENV_MAINTENANCE.md # Environment maintenance guide
 ├── output/               # Output directory for results
-├── tests/                # Unit tests
-├── internvl_env.yml       # Conda environment specification
+│   └── predictions_test/ # Test predictions
+├── scripts/              # Shell scripts
+│   ├── run.sh                # Main runner script
+│   ├── evaluate_sroie.sh     # Script to evaluate on SROIE dataset
+│   ├── setup_venv.sh         # Script to set up virtual environment
+│   └── create_clean_package.sh  # Script to create offline deployment package
+├── internvl_env.yml      # Conda environment specification
 ├── prompts.yaml          # Prompt templates for model extraction tasks
-├── RUNNING.md            # Documentation for running commands
-├── SHARED_COMPUTE.md     # Guide for running on shared compute resources
-├── SETUP_INSTRUCTIONS.md # Setup instructions
-├── scripts/             # Shell scripts
-└── README.md             # This file
+├── PROJECT_OVERVIEW.md   # High-level project overview
+├── README.md             # This file
+└── verify_env.py         # Script to verify environment
 ```
 
-## Remote execution examples (with remote paths)
+## Command Examples by Task
+
+Here are comprehensive examples for various tasks in both local and remote environments:
+
+### Processing Single Images
 
 ```bash
-./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/tod/internvl_PoC/test_receipt.png
-./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images
-./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/images \
-  --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test \
-  --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
+# Local environment
+./scripts/run.sh single --image-path /Users/username/Desktop/internvl_PoC/test_receipt.png
+
+# Remote environment
+./scripts/run.sh --remote single --image-path /home/jovyan/nfs_share/username/internvl_PoC/test_receipt.png
 ```
 
+### Batch Processing
 
 ```bash
-./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images
-./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/sroie/images \
-  --output-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test
-./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/tod/internvl_PoC/output/predictions_test \
-  --ground-truth-dir /home/jovyan/nfs_share/tod/internvl_PoC/data/synthetic/ground_truth
+# Local environment - synthetic data
+./scripts/run.sh batch --image-folder-path /Users/username/Desktop/internvl_PoC/data/synthetic/images
+
+# Remote environment - synthetic data
+./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/username/internvl_PoC/data/synthetic/images
+
+# Remote environment - SROIE dataset
+./scripts/run.sh --remote batch --image-folder-path /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images
 ```
+
+### Generating Predictions
+
+```bash
+# Local environment - synthetic data
+./scripts/run.sh predict --test-image-dir /Users/username/Desktop/internvl_PoC/data/synthetic/images \
+  --output-dir /Users/username/Desktop/internvl_PoC/output/predictions_test
+
+# Remote environment - synthetic data
+./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/synthetic/images \
+  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test
+
+# Remote environment - SROIE dataset
+./scripts/run.sh --remote predict --test-image-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/images \
+  --output-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test
+```
+
+### Evaluating Results
+
+```bash
+# Local environment - synthetic data
+./scripts/run.sh evaluate --predictions-dir /Users/username/Desktop/internvl_PoC/output/predictions_test \
+  --ground-truth-dir /Users/username/Desktop/internvl_PoC/data/synthetic/ground_truth
+
+# Remote environment - synthetic data
+./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test \
+  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/synthetic/ground_truth
+
+# Remote environment - SROIE dataset
+./scripts/run.sh --remote evaluate --predictions-dir /home/jovyan/nfs_share/username/internvl_PoC/output/predictions_test \
+  --ground-truth-dir /home/jovyan/nfs_share/username/internvl_PoC/data/sroie/ground_truth
+```
+
+> **Note**: Replace `/Users/username/` and `/home/jovyan/nfs_share/username/` with your actual local and remote paths.
 
 
 ## SROIE Dataset Evaluation
