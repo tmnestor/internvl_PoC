@@ -362,10 +362,17 @@ def main():
     
     # Setup logger with appropriate verbosity
     log_level = "DEBUG" if args.verbose else "INFO"
-    setup_logging(level=log_level)
-    
+
     # Load configuration
     config = load_config(args)
+
+    # Get transformers log level from config
+    transformers_log_level = config.get("transformers_log_level", "WARNING")
+
+    # Setup logging with appropriate levels
+    setup_logging(level=log_level, transformers_log_level=transformers_log_level)
+
+    # Initialize path manager
     path_manager = PathManager()
     
     # Resolve paths

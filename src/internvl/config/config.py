@@ -155,6 +155,9 @@ def load_config(args: Optional[argparse.Namespace] = None) -> Dict[str, Any]:
         
         # Environment information
         "environment": get_env("ENVIRONMENT", detect_environment()),
+
+        # Logging settings
+        "transformers_log_level": get_env("TRANSFORMERS_LOG_LEVEL", "WARNING"),
     }
     
     # Override with command-line arguments if provided

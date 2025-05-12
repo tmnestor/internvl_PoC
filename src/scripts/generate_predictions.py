@@ -52,14 +52,20 @@ def main() -> int:
     
     # Setup logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    setup_logging(log_level)
+
+    # Load configuration
+    config = load_config(args)
+
+    # Get transformers log level from config
+    transformers_log_level = config.get("transformers_log_level", "WARNING")
+
+    # Setup logging with appropriate levels
+    setup_logging(log_level, transformers_log_level=transformers_log_level)
     logger = get_logger(__name__)
-    
+
     logger.info(f"Generating predictions for images in: {args.test_image_dir}")
-    
+
     try:
-        # Load configuration
-        config = load_config(args)
         
         # Ensure output directory exists
         output_dir = Path(args.output_dir)

@@ -155,7 +155,12 @@ def main() -> int:
     
     # Setup logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    setup_logging(log_level)
+
+    # Load configuration to get transformers log level
+    config = load_config(args)
+    transformers_log_level = config.get("transformers_log_level", "WARNING")
+
+    setup_logging(log_level, transformers_log_level=transformers_log_level)
     logger = get_logger(__name__)
     
     try:
