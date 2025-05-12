@@ -1,29 +1,6 @@
 # Shared Conda Environments Guide
 
-This guide explains how to create and manage shared Conda environments in multi-user systems, particularly for JupyterHub environments using network file systems like Amazon EFS.
-
-## JupyterHub-Specific Considerations
-
-In JupyterHub environments, you'll typically notice:
-
-```bash
-# Check your username
-whoami    # Returns "jovyan"
-echo $USER    # Returns "jovyan"
-id -un    # Returns "jovyan"
-```
-
-The username "jovyan" is the default in JupyterHub deployments (named after Jovian/Jupiter). Important notes:
-
-1. **Shared Username**: All users often share the same system username "jovyan"
-2. **User Separation**: JupyterHub differentiates users at the application level, not the Unix level
-3. **File Ownership**: Files you create will show owner "jovyan" regardless of which JupyterHub user you are
-4. **Security Implications**: Permissions and group memberships become critically important
-
-For this reason, JupyterHub deployments typically use one of these approaches:
-- **User Volumes**: Each user gets a separate persistent volume mounted at a unique location
-- **Unix Groups**: All users share the "jovyan" username but belong to different groups
-- **Shared Environments**: Carefully controlled shared spaces like `/efs/shared/`
+This guide explains how to create and manage shared Conda environments in multi-user systems, JupyterHub environments using the Amazon EFS network file system.
 
 ## Conda Environment Locations
 
@@ -307,9 +284,6 @@ Then install packages as normal with pip.
 4. **Consider package compatibility** before adding new dependencies
 5. **Test changes** in a separate environment before updating the shared one
 
-## JupyterHub Environment Management
-
-For JupyterHub administrators and users:
 
 ### Forcing Environment Location
 
@@ -329,25 +303,3 @@ conda create -p /efs/shared/.conda/envs/internvl_env python=3.11 pytorch torchvi
 
 This approach ensures the environment goes exactly where you want it, regardless of YAML settings or conda defaults.
 
-### Multiple Users with Same System Username
-
-Since all users appear as "jovyan" at the system level:
-
-```bash
-# Create a command to identify which JupyterHub user you are
-echo "export JUPYTERHUB_USER=\$(echo \$JUPYTERHUB_API_URL | cut -d'/' -f4)" >> ~/.bashrc
-source ~/.bashrc
-echo "JupyterHub user: $JUPYTERHUB_USER"
-```
-
-### User-Specific Environment Tricks
-
-You can create user-specific environment locations even with shared "jovyan" username:
-
-```bash
-# Use JupyterHub username in environment path
-export MY_JUPYTER_USER=$(echo $JUPYTERHUB_API_URL | cut -d'/' -f4)
-conda env create -f environment.yml --prefix /efs/shared/.conda/envs/${MY_JUPYTER_USER}_internvl_env
-```
-
-This creates separate environments for each JupyterHub user while maintaining shared access when desired.
