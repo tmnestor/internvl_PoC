@@ -193,16 +193,16 @@ For more control and transparency, you can run the Python modules directly:
 export PYTHONPATH=/path/to/project/root
 
 # Process a single image
-python -m src.scripts.internvl_single --image-path /path/to/image.jpg
+python3 -m src.scripts.internvl_single --image-path /path/to/image.jpg
 
 # Process multiple images
-python -m src.scripts.internvl_batch --image-folder-path /path/to/images
+python3 -m src.scripts.internvl_batch --image-folder-path /path/to/images
 
 # Generate predictions
-python -m src.scripts.generate_predictions --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
+python3 -m src.scripts.generate_predictions --test-image-dir /path/to/data/synthetic/images --output-dir /path/to/output/predictions
 
 # Evaluate extraction results
-python -m src.scripts.evaluate_extraction --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
+python3 -m src.scripts.evaluate_extraction --predictions-dir /path/to/output/predictions --ground-truth-dir /path/to/data/synthetic/ground_truth
 ```
 
 The `-m` flag tells Python to run the module as a script, which ensures proper imports and package structure.
