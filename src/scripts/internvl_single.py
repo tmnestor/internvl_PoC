@@ -8,6 +8,7 @@ This script processes a single image with InternVL and extracts structured infor
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -48,7 +49,7 @@ def main() -> int:
     try:
         # Parse arguments
         args = parse_args()
-        
+
         # Setup logging
         log_level = logging.DEBUG if args.verbose else logging.INFO
 
@@ -62,7 +63,30 @@ def main() -> int:
         print("Usage: python -m src.scripts.internvl_single --image-path /path/to/image.jpg")
         return 1
     logger = get_logger(__name__)
-    
+
+    # Resolve image path - use a clear, explicit approach
+    image_path = args.image_path
+    image_path_obj = Path(image_path)
+
+    # If path is not absolute and doesn't exist, try using project root only
+    if not image_path_obj.is_absolute() and not image_path_obj.exists():
+        # Try relative to project root only - the most common case for KFP
+        from src.internvl.utils.path import resolve_path
+        project_root = Path(os.environ.get("INTERNVL_PROJECT_ROOT", ".")).absolute()
+        alt_path = project_root / image_path_obj
+
+        # Only update if the file exists at new path
+        if alt_path.exists():
+            image_path = str(alt_path)
+            logger.info(f"Resolved relative path to project root: {image_path}")
+
+    # Update the argument with the resolved path
+    args.image_path = image_path
+
+    # Verify file exists before proceeding
+    if not Path(args.image_path).exists():
+        raise FileNotFoundError(f"Image file not found: {args.image_path}")
+
     logger.info(f"Processing image: {args.image_path}")
     
     try:

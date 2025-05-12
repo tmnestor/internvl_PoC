@@ -18,33 +18,43 @@ from src.internvl.utils.logging import get_logger
 logger = get_logger(__name__)
 
 def load_image(
-    image_path: str, 
-    input_size: int = 448, 
+    image_path: str,
+    input_size: int = 448,
     max_num: int = 12,
     use_thumbnail: bool = True
 ) -> Tuple[torch.Tensor, float, float]:
     """
     Load and process an image for InternVL model inference.
-    
+
     Args:
         image_path: The file path to the image
         input_size: Size of each image tile
         max_num: Maximum number of tiles
         use_thumbnail: Whether to include thumbnail of whole image
-        
+
     Returns:
         Tuple containing:
         - pixel_values: The processed image tensors batch
         - download_time: Time taken to load the image from disk
         - encode_time: Time taken to process and transform the image
     """
+    # Verify image file exists - fail explicitly
+    path_obj = Path(image_path)
+    if not path_obj.exists():
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+
+    # Log the resolved path
+    logger.info(f"Loading image from path: {path_obj.absolute()}")
+
     try:
+
         # Measure time to load the image from disk
         download_start_time = time.time()
         image = Image.open(image_path).convert('RGB')
         download_end_time = time.time()
         download_exe_time = download_end_time - download_start_time
-        logger.debug(f"Image load time: {download_exe_time:.4f}s")
+        logger.info(f"Image load time: {download_exe_time:.4f}s")
+        logger.info(f"Image dimensions: {image.size}")
         
         # Measure time to process and transform the image
         encode_start_time = time.time()
@@ -76,8 +86,8 @@ def load_image(
     
     except Exception as e:
         logger.error(f"Error in load_image: {e}")
-        # Return empty tensor and zero times if there's an error
-        return torch.tensor([]), 0, 0
+        # Fail explicitly rather than returning default values
+        raise
 
 def get_image_filepaths(image_folder: Path, extensions: List[str] = ['.jpg', '.jpeg', '.png']) -> List[str]:
     """

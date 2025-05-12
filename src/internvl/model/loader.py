@@ -42,15 +42,18 @@ def load_model_and_tokenizer(
     Returns:
         Tuple of (model, tokenizer)
     """
-    # Resolve model path if it's from environment variables
+    # IMPORTANT: For models, we prioritize exact paths in environment variables
+    # rather than trying to resolve them relative to project root
     env_model_path = os.environ.get("INTERNVL_MODEL_PATH")
     if env_model_path:
-        resolved_path = resolve_path("MODEL_PATH")
-        if resolved_path:
-            model_path = str(resolved_path)
-            logger.info(f"Using model path from environment: {model_path}")
+        # Use the environment variable directly since model paths are typically absolute
+        # and may point to external volumes in KFP environments
+        model_path = env_model_path
+        logger.info(f"Using model path from environment variable: {model_path}")
+    else:
+        logger.info(f"Using provided model path: {model_path}")
 
-    logger.info(f"Loading model from: {model_path}")
+    logger.info(f"Final model path for loading: {model_path}")
 
     # Determine if it's a local model path
     path_obj = Path(model_path)

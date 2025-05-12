@@ -4,6 +4,7 @@ Model inference utilities for InternVL Evaluation
 This module handles running inference with the InternVL model.
 """
 
+import os
 import time
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -38,19 +39,36 @@ def get_raw_prediction(
     Returns:
         The raw text output from the model
     """
-    if not Path(image_path).exists():
+    image_path_obj = Path(image_path)
+    if not image_path_obj.exists():
         raise FileNotFoundError(f"Image file not found: {image_path}")
 
+    logger.info(f"Processing image at path: {image_path}")
+
     try:
-        # Load and preprocess the image
-        pixel_values, _, _ = load_image(
+        # Log the image path details for debugging
+        image_path_obj = Path(image_path)
+        logger.info(f"Processing image: {image_path_obj.name} (full path: {image_path_obj.absolute()})")
+
+        # Load and preprocess the image - use environment values if available
+        image_size = int(os.environ.get("INTERNVL_IMAGE_SIZE", 448))
+        max_tiles = int(os.environ.get("INTERNVL_MAX_TILES", 12))
+
+        logger.info(f"Using image_size={image_size}, max_tiles={max_tiles} for preprocessing")
+
+        pixel_values, download_time, encode_time = load_image(
             image_path=image_path,
-            input_size=448,  # Default image size
-            max_num=12  # Default max tiles
+            input_size=image_size,
+            max_num=max_tiles
         )
-        
+
+        # Log detailed timing information
+        logger.info(f"Image loading time: {download_time:.4f}s, encoding time: {encode_time:.4f}s")
+
         if len(pixel_values) == 0:
             raise ValueError(f"Failed to load or process image: {image_path}")
+
+        logger.info(f"Image processed successfully: {len(pixel_values)} tiles created")
         
         # Prepare for inference
         pixel_values = pixel_values.to(torch.bfloat16)

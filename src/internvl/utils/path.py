@@ -97,6 +97,10 @@ def resolve_path(env_var, default_relative_path=None):
 
     path_obj = Path(path_value)
 
+    # Special case for model paths - always use as-is silently (models are typically external)
+    if env_key == "INTERNVL_MODEL_PATH" and path_obj.is_absolute():
+        return path_obj
+
     # If it's already an absolute path, return it as is (backwards compatibility)
     if path_obj.is_absolute():
         logger.warning(f"Using absolute path for {env_key}={path_value}. For KFP compatibility, consider using relative paths.")

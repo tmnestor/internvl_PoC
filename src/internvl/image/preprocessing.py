@@ -75,27 +75,33 @@ def find_closest_aspect_ratio(
     return best_ratio
 
 def dynamic_preprocess(
-    image: Image.Image, 
-    min_num: int = 1, 
-    max_num: int = 12, 
-    image_size: int = 448, 
+    image: Image.Image,
+    min_num: int = 1,
+    max_num: int = 12,
+    image_size: int = 448,
     use_thumbnail: bool = False
 ) -> List[Image.Image]:
     """
     Process images with dynamic tiling based on aspect ratio.
-    
+
     Args:
         image: The input image to process
         min_num: Minimum number of tiles
         max_num: Maximum number of tiles
         image_size: Size of each square tile
         use_thumbnail: Whether to add a thumbnail as an additional tile
-        
+
     Returns:
         A list of PIL.Image objects representing the image tiles
     """
+    # Log beginning of preprocessing
+    logger.info(f"Starting dynamic preprocessing with parameters: min_num={min_num}, max_num={max_num}, image_size={image_size}")
+
+    # Get and log image dimensions
     orig_width, orig_height = image.size
     aspect_ratio = orig_width / orig_height
+
+    logger.info(f"Original image dimensions: {orig_width}x{orig_height}, aspect ratio: {aspect_ratio:.2f}")
 
     # Calculate all possible tiling patterns that meet the constraints
     target_ratios = set(
@@ -129,11 +135,17 @@ def dynamic_preprocess(
         processed_images.append(split_img)
     
     # Verify we have the expected number of tiles
-    assert len(processed_images) == blocks
-    
+    if len(processed_images) != blocks:
+        logger.warning(f"Tile count mismatch: expected {blocks}, got {len(processed_images)}")
+        # Fail explicitly with clear error message
+        if len(processed_images) == 0:
+            raise ValueError(f"Failed to create any image tiles. Expected {blocks} tiles.")
+
     # Add a thumbnail of the entire image if requested
     if use_thumbnail and len(processed_images) != 1:
         thumbnail_img = image.resize((image_size, image_size))
         processed_images.append(thumbnail_img)
-    
+        logger.info(f"Added thumbnail as tile #{len(processed_images)}")
+
+    logger.info(f"Preprocessing complete: created {len(processed_images)} tiles with dimensions {image_size}x{image_size}")
     return processed_images
