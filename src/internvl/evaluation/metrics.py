@@ -209,18 +209,18 @@ def average_metrics(
     return avg_metrics
 
 def process_results_for_eval(
-    results: List[Dict], 
-    ground_truth: Dict, 
+    results: List[Dict],
+    ground_truth: Dict,
     fields: List[str] = None
 ) -> Tuple[Dict, Dict, List[str]]:
     """
     Process results for evaluation by organizing predictions and ground truth data.
-    
+
     Args:
         results: List of dictionaries containing inference results
         ground_truth: Dictionary containing ground truth data
         fields: List of fields to process
-        
+
     Returns:
         Tuple containing organized predictions, actuals, and image IDs
     """
@@ -228,32 +228,61 @@ def process_results_for_eval(
         predictions = {}
         actuals = {}
         image_ids = []
-        
+
         # Use default fields if none provided
         evaluation_fields = fields if fields is not None else [
-            "date_value", "store_name_value", "tax_value", "total_value", 
+            "date_value", "store_name_value", "tax_value", "total_value",
             "prod_item_value", "prod_quantity_value", "prod_price_value"
         ]
-        
+
+        # Print stats about what we're trying to match
+        result_ids = [r["image_id"] for r in results]
+        gt_ids = list(ground_truth.keys())
+
+        logger.info(f"Matching {len(result_ids)} prediction files with {len(gt_ids)} ground truth files")
+        logger.info(f"Prediction IDs (first 5): {result_ids[:5]}")
+        logger.info(f"Ground truth IDs (first 5): {gt_ids[:5]}")
+
+        # Count how many prediction files match ground truth
+        matched_count = sum(1 for r_id in result_ids if r_id in gt_ids)
+        logger.info(f"Found {matched_count} matching files out of {len(result_ids)} predictions")
+
+        # Look for SROIE vs synthetic mismatches
+        if "sample_receipt" in ":".join(result_ids) and "sroie_test" in ":".join(gt_ids):
+            logger.error("MISMATCHED DATASETS: Predictions appear to be for synthetic receipts but ground truth is for SROIE")
+        elif "sroie_test" in ":".join(result_ids) and "sample_receipt" in ":".join(gt_ids):
+            logger.error("MISMATCHED DATASETS: Predictions appear to be for SROIE but ground truth is for synthetic receipts")
+
         for field in evaluation_fields:
             f_predictions = []
             f_actuals = []
-            
+
             for result in results:
                 image_id = str(result['image_id'])
-                
+
                 if image_id in ground_truth.keys():
                     image_ids.append(image_id)
-                    
-                    # Append extracted prediction if exists, otherwise empty string
-                    f_predictions.append(result.get('extracted_info', {}).get(field, ''))
-                    
-                    # Append actual value if field exists in ground_truth, otherwise empty string
-                    f_actuals.append(ground_truth[image_id].get(field, ''))
+
+                    # Get prediction and ground truth values
+                    pred_value = result.get('extracted_info', {}).get(field, '')
+                    gt_value = ground_truth[image_id].get(field, '')
+
+                    # Debug: log the values being compared (for first few only)
+                    if len(f_predictions) < 3:  # Only log first 3 for brevity
+                        logger.debug(f"Comparing {field} for {image_id}:")
+                        logger.debug(f"  Prediction: {pred_value}")
+                        logger.debug(f"  Ground Truth: {gt_value}")
+
+                    # Append values
+                    f_predictions.append(pred_value)
+                    f_actuals.append(gt_value)
 
             predictions[field] = f_predictions
             actuals[field] = f_actuals
-        
+
+        # Final stats
+        logger.info(f"Collected {len(image_ids)} matching image IDs for evaluation")
+
         return predictions, actuals, image_ids
 
     except Exception as e:
@@ -414,24 +443,36 @@ def calculate_field_metrics(
         try:
             with open(gt_file, 'r', encoding='utf-8') as f:
                 gt_data = json.load(f)
-            
+
             # Standardize ground truth data
             image_id = gt_file.stem
-            standardized_gt = {
-                "date_value": gt_data.get("date", ""), 
-                "store_name_value": gt_data.get("store_name", ""),
-                "tax_value": gt_data.get("tax", ""),
-                "total_value": gt_data.get("total", ""), 
-                "prod_item_value": gt_data.get("items", []),
-                "prod_quantity_value": gt_data.get("quantities", []),
-                "prod_price_value": gt_data.get("prices", [])
-            }
-            
+
+            # Debug log: Check ground truth format
+            logger.debug(f"Ground truth file {gt_file.name} raw keys: {list(gt_data.keys())}")
+
+            # Check if the ground truth already uses the expected field names
+            if all(field in gt_data for field in ["date_value", "store_name_value", "tax_value", "total_value"]):
+                logger.debug(f"Ground truth file {gt_file.name} already uses expected field names")
+                standardized_gt = gt_data  # Use as-is
+            else:
+                # Standardize from conventional field names
+                logger.debug(f"Ground truth file {gt_file.name} needs field name standardization")
+                standardized_gt = {
+                    "date_value": gt_data.get("date", ""),
+                    "store_name_value": gt_data.get("store_name", ""),
+                    "tax_value": gt_data.get("tax", ""),
+                    "total_value": gt_data.get("total", ""),
+                    "prod_item_value": gt_data.get("items", []),
+                    "prod_quantity_value": gt_data.get("quantities", []),
+                    "prod_price_value": gt_data.get("prices", [])
+                }
+
             # Apply normalization if enabled
             if normalize:
                 standardized_gt = normalize_field_values(standardized_gt)
-                
+
             ground_truth_dict[image_id] = standardized_gt
+            logger.debug(f"Added {image_id} to ground truth dict with keys: {list(standardized_gt.keys())}")
         except Exception as e:
             logger.error(f"Error loading ground truth file {gt_file}: {e}")
     
@@ -441,13 +482,28 @@ def calculate_field_metrics(
         try:
             with open(pred_file, 'r', encoding='utf-8') as f:
                 prediction = json.load(f)
-            
+
+            # Format results for evaluation
+            image_id = pred_file.stem
+
+            # Debug log for prediction file
+            logger.debug(f"Loading prediction file: {pred_file.name}, image_id: {image_id}")
+            logger.debug(f"Prediction keys: {list(prediction.keys())}")
+
+            # Check if the corresponding ground truth exists
+            if image_id in ground_truth_dict:
+                logger.debug(f"Found matching ground truth for {image_id}")
+            else:
+                logger.warning(f"No matching ground truth found for prediction: {image_id}")
+                # Find partial matches (debug only)
+                partial_matches = [gt_id for gt_id in ground_truth_dict.keys() if gt_id in image_id or image_id in gt_id]
+                if partial_matches:
+                    logger.debug(f"Possible matches for {image_id}: {partial_matches}")
+
             # Apply normalization if enabled
             if normalize:
                 prediction = normalize_field_values(prediction)
-            
-            # Format results for evaluation
-            image_id = pred_file.stem
+
             results.append({
                 "image_id": image_id,
                 "extracted_info": prediction

@@ -84,32 +84,73 @@ def run_evaluation(
 ) -> Dict[str, Any]:
     """
     Run evaluation comparing predictions against ground truth.
-    
+
     Args:
         predictions_dir: Directory containing prediction files
         ground_truth_dir: Directory containing ground truth files
         output_path: Path to save evaluation results (optional)
         fields: List of fields to evaluate
         normalize: Whether to normalize fields before comparison
-        
+
     Returns:
         Dictionary containing evaluation results
     """
     logger.info("Starting evaluation...")
     logger.info(f"Predictions directory: {predictions_dir}")
     logger.info(f"Ground truth directory: {ground_truth_dir}")
-    
+
     # Ensure directories exist
     if not predictions_dir.exists():
         raise FileNotFoundError(f"Predictions directory not found: {predictions_dir}")
     if not ground_truth_dir.exists():
         raise FileNotFoundError(f"Ground truth directory not found: {ground_truth_dir}")
-    
+
     # Count files in directories
     pred_files = list(predictions_dir.glob("*.json"))
     gt_files = list(ground_truth_dir.glob("*.json"))
     logger.info(f"Found {len(pred_files)} prediction files and {len(gt_files)} ground truth files")
-    
+
+    # Print out both prediction and ground truth files for comparison
+    logger.info("\n" + "="*80)
+    logger.info("COMPARING PREDICTIONS AND GROUND TRUTH FILES:")
+    logger.info("="*80)
+
+    # Get a sample of files to compare (up to 5)
+    sample_pred_files = pred_files[:5] if len(pred_files) >= 5 else pred_files
+
+    for pred_file in sample_pred_files:
+        image_id = pred_file.stem
+        gt_file = ground_truth_dir / f"{image_id}.json"
+
+        logger.info(f"\nFile: {image_id}")
+        logger.info("-" * 40)
+
+        # Load prediction file
+        if pred_file.exists():
+            try:
+                with open(pred_file, 'r', encoding='utf-8') as f:
+                    prediction = json.load(f)
+                logger.info(f"PREDICTION ({pred_file}):")
+                logger.info(json.dumps(prediction, indent=2))
+            except Exception as e:
+                logger.error(f"Error loading prediction file {pred_file}: {e}")
+                logger.info(f"PREDICTION: Error loading file")
+        else:
+            logger.info(f"PREDICTION: File not found")
+
+        # Load ground truth file
+        if gt_file.exists():
+            try:
+                with open(gt_file, 'r', encoding='utf-8') as f:
+                    ground_truth = json.load(f)
+                logger.info(f"GROUND TRUTH ({gt_file}):")
+                logger.info(json.dumps(ground_truth, indent=2))
+            except Exception as e:
+                logger.error(f"Error loading ground truth file {gt_file}: {e}")
+                logger.info(f"GROUND TRUTH: Error loading file")
+        else:
+            logger.info(f"GROUND TRUTH: File not found for {image_id}")
+
     # For example display, we'll need to load some raw data
     examples = {}
     if show_examples:
@@ -120,29 +161,21 @@ def run_evaluation(
             for pred_file in sample_pred_files:
                 image_id = pred_file.stem
                 gt_file = ground_truth_dir / f"{image_id}.json"
-                
+
                 if pred_file.exists() and gt_file.exists():
                     with open(pred_file, 'r', encoding='utf-8') as f:
                         prediction = json.load(f)
                     with open(gt_file, 'r', encoding='utf-8') as f:
                         ground_truth = json.load(f)
-                    
+
                     # Store raw examples for display
                     examples[image_id] = {
                         "prediction": prediction,
-                        "ground_truth": {
-                            "date_value": ground_truth.get("date", ""), 
-                            "store_name_value": ground_truth.get("store_name", ""),
-                            "tax_value": ground_truth.get("tax", ""),
-                            "total_value": ground_truth.get("total", ""), 
-                            "prod_item_value": ground_truth.get("items", []),
-                            "prod_quantity_value": ground_truth.get("quantities", []),
-                            "prod_price_value": ground_truth.get("prices", [])
-                        }
+                        "ground_truth": ground_truth  # Use the raw ground truth directly
                     }
         except Exception as e:
             logger.warning(f"Could not load examples for comparison: {e}")
-    
+
     # Calculate metrics
     overall_metrics, field_metrics = calculate_field_metrics(
         predictions_dir,
