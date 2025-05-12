@@ -131,18 +131,18 @@ def generate_receipt(output_dir, ground_truth_dir, include_gst=True, receipt_id=
     return image_path, ground_truth
 
 def setup_test_directories(base_dir):
-    """Create only the test directory structure, no train/val since we're not fine-tuning"""
-    # Create test directories
-    test_img_dir = os.path.join(base_dir, "test", "images") 
-    test_ground_truth_dir = os.path.join(base_dir, "test", "ground_truth")
-    
+    """Create directory structure that matches the expected project structure"""
+    # Create directories
+    img_dir = os.path.join(base_dir, "images")
+    ground_truth_dir = os.path.join(base_dir, "ground_truth")
+
     # Ensure directories exist
-    os.makedirs(test_img_dir, exist_ok=True)
-    os.makedirs(test_ground_truth_dir, exist_ok=True)
-    
+    os.makedirs(img_dir, exist_ok=True)
+    os.makedirs(ground_truth_dir, exist_ok=True)
+
     return {
-        "test_img_dir": test_img_dir,
-        "test_ground_truth_dir": test_ground_truth_dir
+        "test_img_dir": img_dir,
+        "test_ground_truth_dir": ground_truth_dir
     }
 
 def main():
@@ -173,8 +173,8 @@ def main():
             receipt_id=receipt_id
         )
     
-    print(f"Successfully generated {args.num_receipts} test receipts")
-    print(f"\nTest directory structure created at {base_dir}:")
+    print(f"Successfully generated {args.num_receipts} receipts")
+    print(f"\nDirectories created at {base_dir}:")
     print(f"- Images: {dirs['test_img_dir']}")
     print(f"- Ground truth: {dirs['test_ground_truth_dir']}")
 
