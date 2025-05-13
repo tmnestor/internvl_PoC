@@ -13,8 +13,13 @@ InternVL Evaluation processes images to extract structured data fields like date
 - Dynamic image tiling for optimal model input
 - Single and batch processing modes
 - Structured JSON output extraction
-- Field normalization (dates, prices, store names)
-- Comprehensive evaluation metrics
+- Post-Processing Pipeline:
+  - Robust JSON extraction from model output text
+  - Field normalization:
+    - Dates to DD/MM/YYYY (Australian standard)
+    - Store names (capitalization, whitespace handling)
+    - Prices and currency values (decimal standardization)
+  - Comprehensive evaluation metrics
 - CPU and GPU support
 - Environment-aware configuration
 
@@ -207,6 +212,28 @@ The environment variable loading command works as follows:
 ## Documentation
 
 The primary documentation for this project is in this README and the [RUNNING.md](RUNNING.md) file.
+
+### Post-Processing Pipeline
+
+The post-processing pipeline is a critical component for extracting and standardizing data:
+
+1. **JSON Extraction** (`src/internvl/extraction/json_extraction.py`):
+   - Extracts structured JSON from the model's text output
+   - Handles multiple JSON formats (markdown code blocks, raw JSON)
+   - Provides fallback mechanisms for malformed JSON
+   - Includes pattern matching for field identification
+
+2. **Field Normalization** (`src/internvl/extraction/normalization.py`):
+   - Standardizes dates to DD/MM/YYYY format using intelligent date parsing
+   - Normalizes store names with consistent capitalization
+   - Cleans numeric values by removing currency symbols and standardizing decimal formats
+   - Handles edge cases in various data representations
+
+3. **Evaluation System** (`src/internvl/evaluation/metrics.py`):
+   - Calculates accuracy, precision, recall, and F1-score
+   - Provides field-specific evaluation metrics
+   - Supports both scalar fields (date, store, tax, total) and list fields (items, quantities, prices)
+   - Generates visualizations and comprehensive reports
 
 ### Prompt System
 
