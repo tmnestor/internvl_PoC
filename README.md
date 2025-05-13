@@ -494,6 +494,41 @@ The evaluation compares extraction performance on the following fields:
 Note: Make sure to run the evaluation script from the project root directory for proper path resolution.
 
 
+## Synthetic Dataset Generation
+
+You can generate synthetic receipt datasets for testing and development:
+
+### Generating Simple Receipts
+
+```bash
+# Activate the conda environment
+conda activate internvl_env
+
+# Use Python module execution
+PYTHONPATH=$PWD python3 -m data.generators.simple_receipt_generator --num_receipts 20 --include_gst
+```
+
+### Generating Advanced Receipts
+
+```bash
+# Activate the conda environment
+conda activate internvl_env
+
+# Use Python module execution
+python -m data.generators.receipt_generator --num_receipts 20 --image_size 2048
+```
+
+Parameters for simple receipt generator:
+- `--num_receipts`: Number of test receipts to generate (default: 20)
+- `--include_gst`: Flag to include GST (Goods and Services Tax) on the receipts
+- `--output_dir`: Output directory (overrides environment variable INTERNVL_SYNTHETIC_DATA_PATH)
+
+Parameters for advanced receipt generator:
+- `--num_receipts`: Number of receipts to generate (default: 20)
+- `--image_size`: Size of output images (default: 2048)
+- `--seed`: Random seed for reproducibility (default: 42)
+- `--output_dir`: Output directory (overrides environment variable INTERNVL_SYNTHETIC_DATA_PATH)
+
 ## License
 
 [MIT License](LICENSE)
