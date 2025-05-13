@@ -23,283 +23,141 @@ In your environment YAML file (e.g., `internvl_env.yml`), add a prefix pointing 
 ```yaml
 name: internvl_env
 channels:
-  # - /
-  # - https://artifactory.ctz.atocnet.gov.au/artifactory/api/conda/sdpaapds-conda-develop-local
   - defaults
 dependencies:
   - python=3.11
+  - pytorch=2.1.0
   # ... other dependencies
 prefix: /efs/shared/.conda/envs/internvl_env
 ```
 
-For JupyterHub environments where everyone shares the "jovyan" username, this approach becomes particularly important. The prefix path should point to a location that:
-
-1. Has appropriate permissions for all intended users
-2. Is mounted consistently across all user instances
-3. Persists between JupyterHub restarts
-
-### 2. Create the Environment
+### 2. Create Environment Using Prefix
 
 ```bash
-# This may not work if command line options override the YAML prefix
-conda env create -f internvl_env.yml
-
-# If the environment is still created in ~/.conda/envs, use this explicit approach:
-conda env create -f internvl_env.yml -p /efs/shared/.conda/envs/internvl_env
+conda env create -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env
 ```
 
-**Note about prefix issues:** If your environment is still being created in `~/.conda/envs/internvl_env` despite having set `prefix:` in the YAML:
+### 3. Update Existing Environment
 
-1. Command line options (`-n` or `--name`) override the YAML prefix
-2. Some versions of conda may prioritize the name over the prefix in the YAML
-3. Your conda config might have settings that override the prefix
-
-Always use the `-p` or `--prefix` flag directly when creating a shared environment to ensure the correct location:
-
-## Setting Proper Permissions
-
-For true sharing, correct directory permissions are essential.
-
-### Understanding Unix Permissions
-
-The permission string "drwxrws---" represents:
-- **d**: Directory
-- **rwx**: Owner has read, write, and execute permissions
-- **rw-**: Group has read and write permissions
-- **s**: SGID (Set Group ID) bit is set
-- **---**: Others have no permissions
-
-### Setting SGID for Shared Directories
-
-The SGID bit ensures all new files created in the directory inherit the directory's group ownership:
+When you need to update dependencies:
 
 ```bash
-# Set permissions with SGID (2770)
-chmod 2770 /efs/shared/.conda/envs/internvl_env
+conda env update -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env --prune
 ```
 
-### Group Ownership
+The `--prune` flag removes dependencies that are no longer specified in the YAML file.
 
-Make sure the directory is owned by the correct group:
+## Using the Shared Environment
 
-```bash
-# Check your group
-id -gn  # Returns your current group, e.g., "users"
+### 1. Method 1: Activating by Path
 
-# Set group ownership
-chgrp users /efs/shared/.conda/envs/internvl_env
-```
-
-### Recursive Permissions
-
-For existing environments that need to be shared:
-
-```bash
-# Set permissions recursively
-chmod -R 2770 /efs/shared/.conda/envs/internvl_env
-chgrp -R users /efs/shared/.conda/envs/internvl_env
-```
-
-## Activating Shared Environments
-
-Users can activate the shared environment using its full path:
+Users can activate the environment using its full path:
 
 ```bash
 conda activate /efs/shared/.conda/envs/internvl_env
 ```
 
-Or add the shared directory to their conda config:
+### 2. Method 2: Adding to Known Environments
+
+Users can add the shared directory to their environment search path:
 
 ```bash
+# Add shared environment location to config
 conda config --append envs_dirs /efs/shared/.conda/envs
-```
 
-Then activate by name:
-
-```bash
+# Now users can activate by name
 conda activate internvl_env
 ```
 
-### Creating an Activation Alias (Recommended)
+## Package Management and Updates
 
-For convenience, users can add an alias to their .bashrc file:
+### Administrator Responsibilities
 
-```bash
-echo 'alias activate_internvl="conda activate /efs/shared/.conda/envs/internvl_env"' >> ~/.bashrc && source ~/.bashrc
-```
+1. **Schedule Regular Updates**:
+   ```bash
+   # First test the updated environment in a test location
+   conda env update -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env_test --prune
+   
+   # Once tested, update the production environment
+   conda env update -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env --prune
+   ```
 
-After running this command, users can simply type `activate_internvl` to activate the shared environment. This is especially useful in JupyterHub environments where typing the full path repeatedly can be tedious.
+2. **Track Dependencies**:
+   ```bash
+   # Export current environment to a requirements file for reference
+   conda list --explicit > internvl_env_snapshot_$(date +%Y%m%d).txt
+   ```
 
-## Checking Group Membership
+3. **Custom Channel Configuration**:
+   ```bash
+   # Add internal channels when needed
+   conda config --add channels https://your-internal-channel.example.com
+   ```
 
-To see who's in your group:
+### Best Practices
 
-```bash
-# Show your current group
-id -gn
+1. **Permissions Management**:
+   ```bash
+   # Make the environment readable by all users
+   chmod -R 755 /efs/shared/.conda/envs/internvl_env
+   ```
 
-# List members of your group
-getent group $(id -gn)
+2. **Communication with Users**:
+   - Establish a notification system for environment changes
+   - Provide clear documentation on how to use the environment
+   - Set up a regular maintenance schedule
 
-# Show all groups you belong to
-groups
-```
+3. **Version Control**:
+   - Keep all environment files under version control
+   - Document changes with each update
+   - Consider maintaining multiple environment versions for compatibility
 
-## Managing Shared Packages
-
-When multiple users can modify a shared environment:
-
-1. **Designate an administrator** responsible for major updates
-2. **Use environment files** for version control of dependencies
-3. **Communicate changes** to other users before making them
-4. **Consider setting up a staging environment** for testing changes
-
-## Updating the Shared Environment
-
-As the designated administrator for the shared environment, follow these steps to update it:
-
-### 1. Update the Environment YAML File
-
-First, update the `internvl_env.yml` file with any new dependencies or version changes:
-
-```yaml
-name: internvl_env
-# ... other settings
-dependencies:
-  - python=3.11
-  - new_package=1.2.3
-  # ... other dependencies
-prefix: /efs/shared/.conda/envs/internvl_env
-```
-
-### 2. Notify Users Before Making Changes
-
-Send a notification to all users with:
-- Planned update time
-- Expected downtime
-- List of changes being made
-- Any required actions on their part
-
-### 3. Update the Environment
-
-```bash
-# Update the environment using the YAML file
-conda env update -f internvl_env.yml -p /efs/shared/.conda/envs/internvl_env --prune
-
-# The --prune flag removes dependencies that are no longer listed in the YAML
-```
-
-### 4. Fix Permissions After Update
-
-```bash
-# Ensure proper permissions after update
-chmod -R 2770 /efs/shared/.conda/envs/internvl_env
-chgrp -R users /efs/shared/.conda/envs/internvl_env
-```
-
-### 5. Test the Updated Environment
-
-```bash
-# Activate the environment
-conda activate /efs/shared/.conda/envs/internvl_env
-
-# Run verification tests
-python -c "import new_package; print(new_package.__version__)"
-python verify_env.py  # If you have a verification script
-```
-
-### 6. Document the Changes
-
-Keep a record of all updates in a changelog, including:
-- Date of update
-- Packages added/removed/updated
-- Any breaking changes
-- Compatibility notes
-
-### 7. Notify Users of Completed Update
-
-Send a confirmation message that the update is complete with:
-- Summary of changes made
-- Any new usage instructions
-- Contact point for reporting issues
+4. **Validation**:
+   ```bash
+   # Add a validation script to test that all core functionality works
+   python -m src.scripts.utils.verify_env
+   ```
 
 ## Troubleshooting
 
-### Permission Denied Errors
+### Common Issues and Solutions
 
-If users get "permission denied" when trying to install packages:
+1. **Permission Errors**:
+   ```bash
+   # Fix permission issues
+   sudo chown -R $USER:$GROUP /efs/shared/.conda/envs/internvl_env
+   chmod -R 755 /efs/shared/.conda/envs/internvl_env
+   ```
 
-```bash
-# Check file ownership
-ls -la /efs/shared/.conda/envs/internvl_env
+2. **Package Conflicts**:
+   ```bash
+   # Use the --no-deps flag when installing individual packages
+   conda install --no-deps package_name
+   ```
 
-# Fix permissions if needed
-chmod -R g+w /efs/shared/.conda/envs/internvl_env
-```
+3. **Identifying Issues**:
+   ```bash
+   # Check environment integrity
+   conda list --revisions
+   ```
 
-In JupyterHub environments with shared "jovyan" username:
+## Example for InternVL Project
 
-```bash
-# See which JupyterHub user you're logged in as (at the application level)
-# This is often shown in the JupyterHub interface or URL
-
-# Check if you can access the shared environment
-conda env list | grep /efs/shared
-
-# If issues persist, your JupyterHub instance may have mount permission issues
-# Contact your JupyterHub administrator
-```
-
-### Conflicts Between Users
-
-If users need different packages:
-
-1. Consider creating a base shared environment with common packages
-2. Use pip's `--user` flag for personal installations
-3. Use Conda environments that build upon the shared base
-
-## Python Virtual Environments Alternative
-
-For scenarios where Conda isn't ideal, Python virtual environments can be shared:
+Create a shared environment specifically for the InternVL project:
 
 ```bash
-# Create a shared venv
-python -m venv /efs/shared/venvs/internvl_env
+# Configure conda to use shared environment directory
+conda config --append envs_dirs /efs/shared/.conda/envs
 
-# Set permissions
-chmod -R 2770 /efs/shared/venvs/internvl_env
-chgrp -R users /efs/shared/venvs/internvl_env
+# Create the shared environment
+conda env create -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env
 
-# Activate
-source /efs/shared/venvs/internvl_env/bin/activate
+# Make sure permissions are correct
+chmod -R 755 /efs/shared/.conda/envs/internvl_env
+
+# Create a validation script that users can run
+echo "python -m src.scripts.utils.verify_env" > /efs/shared/.conda/envs/validate_internvl.sh
+chmod +x /efs/shared/.conda/envs/validate_internvl.sh
 ```
 
-Then install packages as normal with pip.
-
-## Best Practices
-
-1. **Document the environment** for all users
-2. **Version control** your environment files
-3. **Regularly update** the environment and clean up unused packages
-4. **Consider package compatibility** before adding new dependencies
-5. **Test changes** in a separate environment before updating the shared one
-
-
-### Forcing Environment Location
-
-If you're having trouble creating environments in the shared location:
-
-```bash
-# First, ensure the target directory exists with proper permissions
-mkdir -p /efs/shared/.conda/envs
-chmod 2775 /efs/shared/.conda/envs
-
-# Then create the environment with explicit prefix
-conda env create -f internvl_env.yml -p /efs/shared/.conda/envs/internvl_env --force
-
-# Or use conda create directly (instead of from YAML)
-conda create -p /efs/shared/.conda/envs/internvl_env python=3.11 pytorch torchvision -c pytorch
-```
-
-This approach ensures the environment goes exactly where you want it, regardless of YAML settings or conda defaults.
-
+This approach ensures a consistent, well-maintained environment that all users can access while minimizing duplication and conflicts.

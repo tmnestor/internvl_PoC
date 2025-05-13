@@ -72,12 +72,15 @@ conda activate ~/.conda/envs/internvl_env
 # Create a user-specific .env file
 cp .env.example .env
 
-# Edit the .env file with your specific paths
-# All paths must be absolute, not relative
+# Edit the .env file with your specific paths and settings
+# Use relative paths for KFP compatibility
 nano .env
+
+# Be sure to specify which prompt to use from prompts.yaml
+# Example: INTERNVL_PROMPT_NAME=australian_optimized_prompt
 ```
 
-#### 4. Handling Shared GPU Resources
+#### 4. Handling Shared GPU Resources & Environments
 
 If your system has GPUs that are shared among users:
 
@@ -88,6 +91,21 @@ nvidia-smi
 # If needed, specify a particular GPU to use
 export CUDA_VISIBLE_DEVICES=0  # Use only GPU 0
 ```
+
+For managing shared conda environments in multi-user systems:
+
+```bash
+# Configure conda to use a shared environment location
+conda config --append envs_dirs /efs/shared/.conda/envs
+
+# Update the shared environment
+conda env update -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env --prune
+
+# Activate the shared environment
+conda activate /efs/shared/.conda/envs/internvl_env
+```
+
+See [SHARED_ENVIRONMENTS.md](docs/SHARED_ENVIRONMENTS.md) for detailed information on managing shared conda environments.
 
 #### 5. Environment Cleanup (When Needed)
 
@@ -199,6 +217,9 @@ python -m src.scripts.create_project_structure --target-dir /path/to/new/locatio
 
 # Split SROIE ground truth into individual files
 python -m src.scripts.split_json
+
+# Verify environment setup
+python -m src.scripts.utils.verify_env
 ```
 
 The environment variable loading command works as follows:
@@ -211,7 +232,7 @@ The environment variable loading command works as follows:
 
 ## Documentation
 
-The primary documentation for this project is in this README and the [RUNNING.md](RUNNING.md) file.
+The primary documentation for this project is in this README, the [KFP_COMPATIBILITY.md](docs/KFP_COMPATIBILITY.md) file, and the [SHARED_ENVIRONMENTS.md](docs/SHARED_ENVIRONMENTS.md) guide for managing shared conda environments.
 
 ### Post-Processing Pipeline
 
@@ -235,18 +256,74 @@ The post-processing pipeline is a critical component for extracting and standard
    - Supports both scalar fields (date, store, tax, total) and list fields (items, quantities, prices)
    - Generates visualizations and comprehensive reports
 
-### Prompt System
+### Prompt System for Australian Tax Office Receipts
 
-The `prompts.yaml` file is central to the extraction functionality:
+The `prompts.yaml` file is central to the extraction functionality and is designed to be customized when you have access to actual Australian Tax Office (ATO) receipts. This file contains specialized prompts that instruct the model on how to extract the required Australian tax receipt fields.
 
-- **Purpose**: Contains templates that instruct the InternVL model how to extract structured data from images
-- **Format**: YAML with multiple named prompt templates (e.g., `default_receipt_prompt`, `detailed_receipt_prompt`)
-- **Usage**: The system uses the prompt specified by `INTERNVL_PROMPT_NAME` in your `.env` file
-- **Customization**: Edit existing prompts or add new ones by modifying this file
-- **Structure**: Each prompt includes an `<image>` placeholder and instructions for extracting specific fields
-- **JSON Output**: All prompts are designed to instruct the model to return data in JSON format
+#### YAML Prompt Structure
 
-This flexible prompt system allows you to tailor extraction for different document types or information needs without changing code.
+The file contains multiple pre-configured prompts optimized for Australian receipts:
+
+```yaml
+# Default prompt for receipt information extraction
+default_receipt_prompt: |
+  <image>
+  Extract these fields from the provided Australian receipt:
+  1. date_value: The date of purchase (DD/MM/YYYY)
+  2. store_name_value: The name of the Australian store or company
+  3. tax_value: The GST (10% tax) amount
+  4. total_value: The total purchase amount
+  5. prod_item_value: List of product items purchased
+  6. prod_quantity_value: List of quantities for each product
+  7. prod_price_value: List of prices for each product
+
+  # [Additional instructions and formatting guidance...]
+```
+
+#### Available Prompt Templates
+
+1. **default_receipt_prompt**: Standard prompt with basic instructions
+2. **simple_receipt_prompt**: Minimal prompt for basic extraction
+3. **strict_json_prompt**: Prompt enforcing strict JSON output format
+4. **detailed_receipt_prompt**: Extensive prompt with field explanations
+5. **australian_optimized_prompt**: Optimized specifically for Australian receipts with detailed guidance
+
+#### Customizing for ATO Receipts
+
+When you have access to actual ATO receipts, you may need to modify the prompts:
+
+1. **Field Alignment**: Make sure the field names match exactly what you need for ATO data
+2. **Australian GST Handling**: Ensure proper extraction of GST (10%)
+3. **Australian Date Formats**: Verify date extraction in DD/MM/YYYY format
+4. **Field Detection**: Add specific hints about where fields typically appear on ATO receipts
+5. **Required Fields**: Add or modify fields based on specific ATO requirements
+
+To modify a prompt:
+
+```bash
+# Edit the prompts.yaml file
+nano prompts.yaml
+
+# Then specify which prompt to use in your .env file
+INTERNVL_PROMPT_NAME=australian_optimized_prompt
+```
+
+#### Testing Modified Prompts
+
+After modifying prompts for ATO receipts:
+
+```bash
+# Test your modified prompt with a single receipt
+python -m src.scripts.internvl_single --image-path path/to/ato_receipt.jpg --prompt-name your_custom_prompt
+
+# Compare different prompts to find which works best
+python -m src.scripts.evaluate_extraction \
+  --predictions-dir output/predictions_test_prompt1 \
+  --ground-truth-dir data/ato/ground_truth \
+  --output-path output/eval_prompt1
+```
+
+This flexible prompt system allows you to tailor extraction specifically for Australian tax receipts without changing any code.
 
 
 ## Directory Structure
@@ -265,7 +342,12 @@ internvl_PoC/
 │       ├── internvl_single.py       # Process single image
 │       ├── internvl_batch.py        # Process batch of images
 │       ├── generate_predictions.py  # Generate predictions
-│       └── evaluate_extraction.py   # Evaluate results
+│       ├── evaluate_extraction.py   # Evaluate results
+│       ├── evaluate_sroie.py        # Run SROIE dataset evaluation
+│       ├── split_json.py            # Split SROIE JSON into individual files
+│       ├── create_project_structure.py  # Create project directory structure
+│       └── utils/                  # Utility scripts
+│           └── verify_env.py       # Verify environment setup
 ├── data/                 # Data directories
 │   ├── generators/       # Scripts for generating synthetic data
 │   ├── sroie/            # SROIE dataset
@@ -275,23 +357,15 @@ internvl_PoC/
 │       ├── ground_truth/ # Ground truth JSON files
 │       └── images/       # Receipt images for testing
 ├── docs/                 # Documentation
-│   ├── RUNNING.md        # Documentation for running commands
-│   ├── SETUP_INSTRUCTIONS.md # Setup instructions
-│   ├── SHARED_COMPUTE.md # Guide for running on shared compute resources
-│   ├── SHARED_ENVIRONMENTS.md # Guide for shared conda environments
-│   └── VENV_MAINTENANCE.md # Environment maintenance guide
+│   ├── KFP_COMPATIBILITY.md # Guide for Kubeflow Pipelines compatibility
+│   └── SHARED_ENVIRONMENTS.md # Guide for managing shared conda environments
 ├── output/               # Output directory for results
 │   └── predictions_test/ # Test predictions
-├── scripts/              # Shell scripts
-│   ├── run.sh                # Main runner script
-│   ├── evaluate_sroie.sh     # Script to evaluate on SROIE dataset
-│   ├── setup_venv.sh         # Script to set up virtual environment
-│   └── create_clean_package.sh  # Script to create offline deployment package
+├── scripts/              # Empty (legacy scripts removed)
 ├── internvl_env.yml      # Conda environment specification
 ├── prompts.yaml          # Prompt templates for model extraction tasks
 ├── PROJECT_OVERVIEW.md   # High-level project overview
-├── README.md             # This file
-└── verify_env.py         # Script to verify environment
+└── README.md             # This file
 ```
 
 ## Command Examples

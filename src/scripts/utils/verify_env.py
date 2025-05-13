@@ -2,7 +2,14 @@
 """
 Verify that the Python environment has all required packages for InternVL.
 Run this after setting up a new environment to confirm it's correctly configured.
+
+Usage: python -m src.scripts.utils.verify_env
 """
+
+from src.internvl.utils.path import enforce_module_invocation
+
+# Enforce module invocation pattern
+enforce_module_invocation("src.scripts.utils")
 
 import importlib
 import sys
