@@ -155,17 +155,11 @@ def load_model_and_tokenizer(
     ) and Path(model_path).exists() and not is_hf_cache_path
 
     if is_hf_cache_path:
-        # Convert HuggingFace cache path back to model ID
-        # Extract model ID from path like: models--OpenGVLab--InternVL3-8B
-        cache_dir_name = path_obj.name
-        if cache_dir_name.startswith("models--"):
-            model_id = cache_dir_name[8:].replace("--", "/")  # Remove "models--" and convert "--" to "/"
-            logger.info(f"Detected HuggingFace cache path, using model ID: {model_id}")
-            model_path = model_id
-            local_files_only = True  # Use cached files
-        else:
-            logger.warning(f"Unrecognized cache path format: {model_path}")
-            local_files_only = False
+        # For HuggingFace cache paths, we need to use local_files_only=True
+        # and keep the cache path as-is for direct loading
+        logger.info(f"Detected HuggingFace cache path: {model_path}")
+        logger.info("Using cached model files with local_files_only=True")
+        local_files_only = True
     elif is_local_model:
         logger.info(f"Detected local model path: {model_path}")
         logger.info("Using local model files")
@@ -196,6 +190,7 @@ def load_model_and_tokenizer(
 
     if local_files_only:
         model_loading_args["local_files_only"] = True
+        logger.info("Setting local_files_only=True for model loading")
 
     # Configure based on device type and GPU count
     if device_type == "cpu":
