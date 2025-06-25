@@ -171,3 +171,52 @@ australian_optimized_prompt: |
 
   Only return the values for the seven keys specified. Do not return any additional key-value pairs.
   Do not output any additional information, notes, reasoning, or explanations. Output only the valid JSON.
+
+# ========================================================================
+# Prompts from Huaifeng_Test_InternVL.ipynb - Original Test Cases
+# ========================================================================
+
+# Conference relevance check prompt
+conference_relevance_prompt: |
+  <image>
+  Is this relevant to a claim about attending academic conference?
+
+# Business expense relevance check prompt  
+business_expense_prompt: |
+  <image>
+  Is this relevant to a claim about car expense?
+
+# Speaker listing prompt
+speaker_list_prompt: |
+  <image>
+  list all the speakers
+
+# Basic JSON extraction for receipts (company, address, phone, date, ABN, total)
+huaifeng_receipt_json_prompt: |
+  <image>
+  read the text and return information in JSON format. I need company name, address, phone number, date, ABN, and total amount
+
+# Multi-receipt JSON extraction prompt
+multi_receipt_json_prompt: |
+  <image>
+  there are two receipts on this image. read the text and return information in JSON format. I need company name, address, phone number, date, ABN, and total amount
+
+# Multi-receipt relevance check prompt
+multi_receipt_relevance_prompt: |
+  <image>
+  there are two receipts on this image. Are these two receipts relevant to a claim about car expense?
+
+# Detailed receipt extraction with item information
+detailed_receipt_json_prompt: |
+  <image>
+  read the text and return information in JSON format. I need company name, address, phone number, date, item name, number of items, item price, and total amount
+
+# Generic document description prompt
+document_description_prompt: |
+  <image>
+  What type of document is this? Provide a brief description.
+
+# Business expense relevance prompt (generic)
+expense_relevance_prompt: |
+  <image>
+  Is this relevant to a business expense claim?

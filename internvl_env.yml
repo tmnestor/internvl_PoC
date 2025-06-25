@@ -37,7 +37,7 @@ dependencies:
     
     # Core dependencies
     - python-dotenv>=1.0.0
-    - numpy<2.0.0  # Pin to NumPy 1.x for compatibility with compiled modules
+    - numpy>=1.26.0,<2.0.0  # Pin to NumPy 1.26+ for compatibility with compiled modules
     - pillow>=9.4.0
     - pandas>=2.0.0
     - dateparser>=1.1.8
@@ -56,12 +56,16 @@ dependencies:
     - pytest>=7.3.1            # For testing
     - pytest-cov>=4.1.0        # For test coverage
     
+    # CLI interface dependencies (Priority 2 compliance)
+    - typer>=0.16.0            # Modern CLI framework
+    - rich>=14.0.0             # Rich console output
+    
     # Add KFP specific dependencies below if needed
     
 # Usage Instructions:
 # -----------------
 # Create environment: conda env create -f internvl_env.yml
-# Update environment: conda env update -f internvl_env.yml --prune
+# Update environment:
 # Activate environment: conda activate internvl_env
 # Remove environment: conda env remove -n internvl_env
 #

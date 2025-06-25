@@ -1,534 +1,392 @@
-# InternVL Evaluation 
+# InternVL PoC - Receipt Information Extraction
 
-A Python package for extracting structured information from images (particularly receipts/invoices) using InternVL2.5 multimodal models.
+A Python package for extracting structured information from images (particularly receipts/invoices) using InternVL3 multimodal models with automatic CPU/GPU configuration.
 
 ## Overview
 
-InternVL Evaluation processes images to extract structured data fields like dates, store names, tax amounts, and products into JSON format. The system works with both local models and HuggingFace hosted models.
+InternVL PoC processes images to extract structured data fields like dates, store names, tax amounts, and products into JSON format. The system automatically detects and optimizes for available hardware (CPU, single GPU, or multi-GPU) and supports both local models and HuggingFace hosted models.
 
-> **Note**: This project has been migrated from Jupyter notebooks to a proper Python package structure.
+## Key Features
 
-## Features
+- **Auto Device Configuration**: Automatically detects and configures for CPU, single GPU, or multi-GPU setups
+- **CPU-1GPU-MultiGPU Support**: Optimized configurations with 8-bit quantization for single GPU and device mapping for multi-GPU
+- **Dynamic Image Processing**: Advanced image tiling and preprocessing for optimal model input
+- **Structured JSON Extraction**: Robust extraction with field normalization for Australian receipts
+- **Comprehensive Evaluation**: Metrics calculation with SROIE dataset support
+- **Environment-based Configuration**: Uses `.env` files for flexible deployment
+- **Modular Architecture**: Clean package structure for maintainability and deployment
 
-- Dynamic image tiling for optimal model input
-- Single and batch processing modes
-- Structured JSON output extraction
-- Post-Processing Pipeline:
-  - Robust JSON extraction from model output text
-  - Field normalization:
-    - Dates to DD/MM/YYYY (Australian standard)
-    - Store names (capitalization, whitespace handling)
-    - Prices and currency values (decimal standardization)
-  - Comprehensive evaluation metrics
-- CPU and GPU support
-- Environment-aware configuration
+## Quick Start
 
-## Installation
-
-## Kubeflow Pipelines (KFP) Compatibility
-
-This system now supports Kubeflow Pipelines (KFP) compatibility through:
-
-1. **Relative Path Support**: All paths can now be specified relative to the project root
-2. **Module Invocation Pattern**: Enforces consistent import behavior across environments
-3. **Environment Detection**: Automatically adapts to different execution environments
-
-See the [KFP Compatibility Guide](docs/KFP_COMPATIBILITY.md) for detailed information.
-
-### Setting Up Conda Environment on Multi-User Linux Systems
-
-For multi-user Linux systems, it's important to set up isolated environments that don't interfere with other users while efficiently managing resources:
-
-#### 1. Initial Setup (One-Time)
+### 1. Environment Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/tmnestor/internvl_PoC_.git
+git clone <your-repo-url>
 cd internvl_PoC
 
-# Set up conda to use a user-specific environment directory
-# This avoids permission issues in shared environments
-mkdir -p ~/.conda/envs
-conda config --append envs_dirs ~/.conda/envs
+# Create conda environment (required for PyTorch/GPU dependencies)
+conda env create -f internvl_env.yml
+conda activate internvl_env
 
-# Create the environment with a specific name for this project
-# The --prefix option ensures it's created in your user directory
-conda env create -f internvl_env.yml --prefix ~/.conda/envs/internvl_env
-
-# Activate the environment
-conda activate ~/.conda/envs/internvl_env
+# Configure environment variables
+cp .env.example .env  # Edit with your paths
 ```
 
-#### 2. Subsequent Activations
+### 2. Configuration
+
+Create/edit your `.env` file:
 
 ```bash
-# Activate the environment in future sessions
-conda activate ~/.conda/envs/internvl_env
-```
-
-#### 3. Environment Configuration
-
-```bash
-# Create a user-specific .env file
-cp .env.example .env
-
-# Edit the .env file with your specific paths and settings
-# Use relative paths for KFP compatibility
-nano .env
-
-# Be sure to specify which prompt to use from prompts.yaml
-# Example: INTERNVL_PROMPT_NAME=australian_optimized_prompt
-```
-
-#### 4. Handling Shared GPU Resources & Environments
-
-If your system has GPUs that are shared among users:
-
-```bash
-# Check GPU availability and usage
-nvidia-smi
-
-# If needed, specify a particular GPU to use
-export CUDA_VISIBLE_DEVICES=0  # Use only GPU 0
-```
-
-For managing shared conda environments in multi-user systems:
-
-```bash
-# Configure conda to use a shared environment location
-conda config --append envs_dirs /efs/shared/.conda/envs
-
-# Update the shared environment
-conda env update -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_env --prune
-
-# Activate the shared environment
-conda activate /efs/shared/.conda/envs/internvl_env
-```
-
-See [SHARED_ENVIRONMENTS.md](docs/SHARED_ENVIRONMENTS.md) for detailed information on managing shared conda environments.
-
-#### 5. Environment Cleanup (When Needed)
-
-```bash
-# Deactivate first
-conda deactivate
-
-# Remove the environment when no longer needed
-conda remove --prefix ~/.conda/envs/internvl_env --all
-```
-
-This approach provides several advantages for multi-user systems:
-- Each user maintains their own isolated environment
-- Avoids permission issues with system-wide conda installations
-- Prevents conflicts between different users' package requirements
-- Allows for easier cleanup when the environment is no longer needed
-
-### Configuration
-
-#### Environment Variables
-
-The system requires a `.env` file for configuration. Create this file in the project root with the following required variables:
-
-```bash
-# Project root path - base for all relative paths
+# Base configuration
 INTERNVL_PROJECT_ROOT=.
-
-# Required paths (relative to project root for KFP compatibility)
 INTERNVL_DATA_PATH=data
 INTERNVL_OUTPUT_PATH=output
-INTERNVL_SOURCE_PATH=src
-INTERNVL_PROMPTS_PATH=prompts.yaml
+INTERNVL_SOURCE_PATH=internvl
 
-# Derived paths
-INTERNVL_SYNTHETIC_DATA_PATH=${INTERNVL_DATA_PATH}/synthetic
-INTERNVL_SROIE_DATA_PATH=${INTERNVL_DATA_PATH}/sroie
-INTERNVL_IMAGE_FOLDER_PATH=${INTERNVL_SYNTHETIC_DATA_PATH}/images
+# Model configuration (update with your model path)
+INTERNVL_MODEL_PATH=/path/to/your/internvl3-8b/model
 
-# Path/name of the InternVL model to use (typically absolute)
-INTERNVL_MODEL_PATH=/path/to/model  # This is often on a different drive
-
-# Optional settings with defaults
+# Processing settings
 INTERNVL_PROMPT_NAME=default_receipt_prompt
 INTERNVL_IMAGE_SIZE=448
 INTERNVL_MAX_TILES=8
-INTERNVL_MAX_WORKERS=4
+INTERNVL_MAX_WORKERS=6
 INTERNVL_MAX_TOKENS=1024
-INTERNVL_TRANSFORMERS_LOG_LEVEL=ERROR  # Hide transformers warnings
 ```
 
-Note: If the `.env` file is missing or lacks required variables, the script will display an error message.
-
-#### Prompt Templates
-
-The `prompts.yaml` file contains templates for prompting the InternVL model. These templates specify how to ask the model to extract structured information from images. The system includes several pre-configured prompts:
-
-- `default_receipt_prompt`: Standard prompt for extracting receipt data
-- `simple_receipt_prompt`: Minimal prompt for basic extraction
-- `strict_json_prompt`: Prompt enforcing strict JSON output format
-- `detailed_receipt_prompt`: Extensive prompt with field explanations
-- `australian_optimized_prompt`: Optimized for Australian receipts
-
-The prompt to use is specified by the `INTERNVL_PROMPT_NAME` environment variable. You can modify existing prompts or add new ones by editing the `prompts.yaml` file.
-
-Example prompt structure:
-```yaml
-default_receipt_prompt: |
-  <image>
-  Extract these fields from the provided receipt:
-  1. date_value: The date of purchase
-  2. store_name_value: The name of the store
-  ...
-  Return the results in a valid JSON format
-```
-
-## Usage
-
-This system is run by executing Python modules using the module invocation pattern, which ensures consistent imports and path resolution across all environments.
-
-### Running Python Modules (Standard Approach)
-
-The system uses the Python module invocation pattern for all operations, which provides consistent imports and path resolution:
+### 3. Basic Usage
 
 ```bash
-# Load all environment variables from .env file silently
-source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
-
 # Process a single image
-python -m src.scripts.internvl_single --image-path test_receipt.png
+python -m internvl.cli.internvl_single --image-path test_receipt.png
 
-# Process multiple images in batch mode
-python -m src.scripts.internvl_batch --image-folder-path data/synthetic/images
+# Process multiple images
+python -m internvl.cli.internvl_batch --image-folder-path data/synthetic/images
 
-# Generate predictions for all images in a directory
-python -m src.scripts.generate_predictions \
-  --test-image-dir data/synthetic/images \
-  --output-dir output/predictions_test
-
-# Evaluate extraction performance
-python -m src.scripts.evaluate_extraction \
-  --predictions-dir output/predictions_test \
-  --ground-truth-dir data/synthetic/ground_truth
-
-# Run SROIE dataset evaluation
-python -m src.scripts.evaluate_sroie
-
-# Create project structure in a new location
-python -m src.scripts.create_project_structure --target-dir /path/to/new/location
-
-# Split SROIE ground truth into individual files
-python -m src.scripts.split_json
-
-# Verify environment setup
-python -m src.scripts.utils.verify_env
+# Run SROIE evaluation
+python -m internvl.evaluation.evaluate_sroie
 ```
 
-The environment variable loading command works as follows:
-- `grep -v '^#' .env` - Filters out comment lines from the .env file
-- `sed 's/^/export /'` - Adds "export " to the beginning of each line
-- `source <( ... ) > /dev/null 2>&1` - Sources the commands silently into your shell
-- This ensures that shell variables are properly expanded
-
-> **Important**: All commands use relative paths to the project root, which will be resolved based on the INTERNVL_PROJECT_ROOT environment variable. Make sure your .env file is properly configured.
-
-## Documentation
-
-The primary documentation for this project is in this README, the [KFP_COMPATIBILITY.md](docs/KFP_COMPATIBILITY.md) file, and the [SHARED_ENVIRONMENTS.md](docs/SHARED_ENVIRONMENTS.md) guide for managing shared conda environments.
-
-### Post-Processing Pipeline
-
-The post-processing pipeline is a critical component for extracting and standardizing data:
-
-1. **JSON Extraction** (`src/internvl/extraction/json_extraction.py`):
-   - Extracts structured JSON from the model's text output
-   - Handles multiple JSON formats (markdown code blocks, raw JSON)
-   - Provides fallback mechanisms for malformed JSON
-   - Includes pattern matching for field identification
-
-2. **Field Normalization** (`src/internvl/extraction/normalization.py`):
-   - Standardizes dates to DD/MM/YYYY format using intelligent date parsing
-   - Normalizes store names with consistent capitalization
-   - Cleans numeric values by removing currency symbols and standardizing decimal formats
-   - Handles edge cases in various data representations
-
-3. **Evaluation System** (`src/internvl/evaluation/metrics.py`):
-   - Calculates accuracy, precision, recall, and F1-score
-   - Provides field-specific evaluation metrics
-   - Supports both scalar fields (date, store, tax, total) and list fields (items, quantities, prices)
-   - Generates visualizations and comprehensive reports
-
-### Prompt System for Australian Tax Office Receipts
-
-The `prompts.yaml` file is central to the extraction functionality and is designed to be customized when you have access to actual Australian Tax Office (ATO) receipts. This file contains specialized prompts that instruct the model on how to extract the required Australian tax receipt fields.
-
-#### YAML Prompt Structure
-
-The file contains multiple pre-configured prompts optimized for Australian receipts:
-
-```yaml
-# Default prompt for receipt information extraction
-default_receipt_prompt: |
-  <image>
-  Extract these fields from the provided Australian receipt:
-  1. date_value: The date of purchase (DD/MM/YYYY)
-  2. store_name_value: The name of the Australian store or company
-  3. tax_value: The GST (10% tax) amount
-  4. total_value: The total purchase amount
-  5. prod_item_value: List of product items purchased
-  6. prod_quantity_value: List of quantities for each product
-  7. prod_price_value: List of prices for each product
-
-  # [Additional instructions and formatting guidance...]
-```
-
-#### Available Prompt Templates
-
-1. **default_receipt_prompt**: Standard prompt with basic instructions
-2. **simple_receipt_prompt**: Minimal prompt for basic extraction
-3. **strict_json_prompt**: Prompt enforcing strict JSON output format
-4. **detailed_receipt_prompt**: Extensive prompt with field explanations
-5. **australian_optimized_prompt**: Optimized specifically for Australian receipts with detailed guidance
-
-#### Customizing for ATO Receipts
-
-When you have access to actual ATO receipts, you may need to modify the prompts:
-
-1. **Field Alignment**: Make sure the field names match exactly what you need for ATO data
-2. **Australian GST Handling**: Ensure proper extraction of GST (10%)
-3. **Australian Date Formats**: Verify date extraction in DD/MM/YYYY format
-4. **Field Detection**: Add specific hints about where fields typically appear on ATO receipts
-5. **Required Fields**: Add or modify fields based on specific ATO requirements
-
-To modify a prompt:
-
-```bash
-# Edit the prompts.yaml file
-nano prompts.yaml
-
-# Then specify which prompt to use in your .env file
-INTERNVL_PROMPT_NAME=australian_optimized_prompt
-```
-
-#### Testing Modified Prompts
-
-After modifying prompts for ATO receipts:
-
-```bash
-# Test your modified prompt with a single receipt
-python -m src.scripts.internvl_single --image-path path/to/ato_receipt.jpg --prompt-name your_custom_prompt
-
-# Compare different prompts to find which works best
-python -m src.scripts.evaluate_extraction \
-  --predictions-dir output/predictions_test_prompt1 \
-  --ground-truth-dir data/ato/ground_truth \
-  --output-path output/eval_prompt1
-```
-
-This flexible prompt system allows you to tailor extraction specifically for Australian tax receipts without changing any code.
-
-
-## Directory Structure
+## Package Structure
 
 ```
 internvl_PoC/
-├── src/                  # Source code
-│   ├── internvl/         # Core package
-│   │   ├── config/       # Configuration management
-│   │   ├── evaluation/   # Evaluation metrics
-│   │   ├── extraction/   # JSON extraction and normalization
-│   │   ├── image/        # Image processing
-│   │   ├── model/        # Model loading and inference
-│   │   └── utils/        # Utilities (logging, path management)
-│   └── scripts/          # Command-line scripts
-│       ├── internvl_single.py       # Process single image
-│       ├── internvl_batch.py        # Process batch of images
-│       ├── generate_predictions.py  # Generate predictions
-│       ├── evaluate_extraction.py   # Evaluate results
-│       ├── evaluate_sroie.py        # Run SROIE dataset evaluation
-│       ├── split_json.py            # Split SROIE JSON into individual files
-│       ├── create_project_structure.py  # Create project directory structure
-│       └── utils/                  # Utility scripts
-│           └── verify_env.py       # Verify environment setup
-├── data/                 # Data directories
-│   ├── generators/       # Scripts for generating synthetic data
-│   ├── sroie/            # SROIE dataset
-│   │   ├── ground_truth/ # Ground truth JSON files
-│   │   └── images/       # Receipt images for testing
-│   └── synthetic/        # Synthetic data for testing
-│       ├── ground_truth/ # Ground truth JSON files
-│       └── images/       # Receipt images for testing
-├── docs/                 # Documentation
-│   ├── KFP_COMPATIBILITY.md # Guide for Kubeflow Pipelines compatibility
-│   └── SHARED_ENVIRONMENTS.md # Guide for managing shared conda environments
-├── output/               # Output directory for results
-│   └── predictions_test/ # Test predictions
-├── scripts/              # Empty (legacy scripts removed)
-├── internvl_env.yml      # Conda environment specification
-├── prompts.yaml          # Prompt templates for model extraction tasks
-├── PROJECT_OVERVIEW.md   # High-level project overview
-└── README.md             # This file
+├── internvl/                    # Main package
+│   ├── cli/                     # Command-line interfaces
+│   │   ├── internvl_single.py   # Single image processing
+│   │   └── internvl_batch.py    # Batch processing
+│   ├── config/                  # Configuration management
+│   ├── evaluation/              # Evaluation scripts and metrics
+│   ├── extraction/              # JSON extraction and normalization
+│   ├── image/                   # Image processing and preprocessing
+│   ├── model/                   # Model loading and inference
+│   └── utils/                   # Utilities and development tools
+├── data/                        # Datasets
+│   ├── sroie/                   # SROIE dataset
+│   └── synthetic/               # Generated test data
+├── docs/                        # Documentation
+├── examples/                    # Example images
+├── .env                         # Environment configuration
+├── prompts.yaml                 # Prompt templates
+├── internvl_codebase_demo.ipynb # Demo notebook
+└── internvl_env.yml             # Conda environment
 ```
 
-## Command Examples
+## Auto Device Configuration
 
-Here are detailed examples of running different tasks using the Python module invocation pattern:
+The system automatically detects your hardware and applies optimal configurations:
 
-### First, Set Up the Environment Variables
+### CPU-Only
+- Uses `torch.float32` precision
+- Optimized for development and testing
 
-```bash
-# Load environment variables
-source <(grep -v '^#' .env | sed 's/^/export /') > /dev/null 2>&1
+### Single GPU
+- Uses `torch.bfloat16` precision with 8-bit quantization
+- Optimal memory usage for large models
 
-# If needed, you can verify the paths are set correctly
-echo "Project root: ${INTERNVL_PROJECT_ROOT}"
-echo "Data path: ${INTERNVL_DATA_PATH}"
-echo "Output path: ${INTERNVL_OUTPUT_PATH}"
+### Multi-GPU
+- Distributes model layers across GPUs using device mapping
+- Automatic load balancing for InternVL3-8B architecture
+
+```python
+# This happens automatically when loading models
+from internvl.model.loader import load_model_and_tokenizer
+
+model, tokenizer = load_model_and_tokenizer(
+    model_path=config['model_path'],
+    auto_device_config=True  # Enables automatic configuration
+)
 ```
 
-### Processing Single Images
+## Command-Line Interface
+
+### Single Image Processing
 
 ```bash
-# Process a single receipt image
-python -m src.scripts.internvl_single --image-path test_receipt.png
+# Basic usage
+python -m internvl.cli.internvl_single --image-path path/to/receipt.jpg
 
-# Process with specific output file
-python -m src.scripts.internvl_single --image-path data/synthetic/images/sample_receipt_001.jpg --output-file output/results/sample_001_result.json
+# With custom output
+python -m internvl.cli.internvl_single \
+  --image-path data/synthetic/images/sample_receipt_001.jpg \
+  --output-file output/result.json
+
+# With verbose logging
+python -m internvl.cli.internvl_single \
+  --image-path test_receipt.png \
+  --verbose
 ```
 
-### Processing Multiple Images (Batch Mode)
+### Batch Processing
 
 ```bash
-# Process all images in the SROIE dataset
-python -m src.scripts.internvl_batch --image-folder-path data/sroie/images
+# Process all images in a directory
+python -m internvl.cli.internvl_batch \
+  --image-folder-path data/sroie/images
 
-# Process images in the synthetic dataset with a specific prompt
-python -m src.scripts.internvl_batch --image-folder-path data/synthetic/images --prompt-name australian_optimized_prompt
+# With custom output and worker count
+python -m internvl.cli.internvl_batch \
+  --image-folder-path data/synthetic/images \
+  --output-file output/batch_results.csv \
+  --max-workers 4
 ```
 
-### Generating Predictions for a Dataset
+## Evaluation and Testing
+
+### SROIE Dataset Evaluation
 
 ```bash
-# Generate predictions for SROIE dataset
-python -m src.scripts.generate_predictions \
+# Run complete SROIE evaluation
+python -m internvl.evaluation.evaluate_sroie
+
+# Generate predictions only
+python -m internvl.evaluation.generate_predictions \
   --test-image-dir data/sroie/images \
-  --output-dir output/predictions_sroie
+  --output-dir output/predictions
 
-# Generate predictions for synthetic dataset with custom model path
-python -m src.scripts.generate_predictions \
-  --test-image-dir data/synthetic/images \
-  --output-dir output/predictions_synthetic \
-  --model-path /path/to/custom/model
+# Evaluate existing predictions
+python -m internvl.evaluation.evaluate_extraction \
+  --predictions-dir output/predictions \
+  --ground-truth-dir data/sroie/ground_truth
 ```
 
-### Evaluating Extraction Performance
+### Custom Dataset Evaluation
 
 ```bash
-# Evaluate SROIE predictions
-python -m src.scripts.evaluate_extraction \
-  --predictions-dir output/predictions_sroie \
-  --ground-truth-dir data/sroie/ground_truth
-
-# Evaluate synthetic predictions with examples shown
-python -m src.scripts.evaluate_extraction \
-  --predictions-dir output/predictions_synthetic \
-  --ground-truth-dir data/synthetic/ground_truth \
+# Evaluate your own dataset
+python -m internvl.evaluation.evaluate_extraction \
+  --predictions-dir output/my_predictions \
+  --ground-truth-dir data/my_dataset/ground_truth \
   --show-examples
 ```
 
-> **Important**: The examples above use relative paths to the project root, which will be resolved based on the INTERNVL_PROJECT_ROOT environment variable. Make sure your .env file is properly configured.
+## Demo Notebook
 
+The `internvl_codebase_demo.ipynb` notebook demonstrates the same functionality as the original Huaifeng_Test_InternVL.ipynb but using the structured codebase:
 
-## SROIE Dataset Evaluation
+- Auto device detection and configuration
+- Image processing with structured prompts
+- JSON extraction and normalization
+- Multiple test scenarios
+- **Complete compatibility** with original Huaifeng notebook test cases
 
-This project includes tools to evaluate the InternVL model on the SROIE receipt dataset. The SROIE dataset consists of real-world receipts with annotations for key fields like date, store name, tax, total, and line items.
+This notebook is ready to run at your workplace and will automatically detect and configure for available GPU resources. It includes all the original test prompts and can replicate the exact same functionality as the original notebook.
 
-### Dataset Structure
+## Prompt System
 
-The SROIE dataset is located in the `data/sroie` directory with the following structure:
-- `data/sroie/images/*.jpg` - Receipt images
-- `data/sroie/ground_truth/*.json` - Ground truth files with labeled fields
+The system uses YAML-based prompt templates in `prompts.yaml` with comprehensive coverage of different use cases:
 
-### Running SROIE Evaluation
+### Australian Receipt Processing Prompts
+```yaml
+default_receipt_prompt: |
+  <image>
+  Extract information from this receipt and return in JSON format.
+  Required fields: date_value, store_name_value, tax_value, total_value
 
-You can evaluate the SROIE dataset using the dedicated Python module:
-
-```bash
-# Run the complete SROIE evaluation pipeline
-python -m src.scripts.evaluate_sroie
-
-# Run with specific options
-python -m src.scripts.evaluate_sroie --prompt-name australian_optimized_prompt --show-examples
+australian_optimized_prompt: |
+  <image>
+  Extract these fields from the Australian receipt:
+  1. date_value: Date in DD/MM/YYYY format
+  2. store_name_value: Store name
+  3. tax_value: GST amount (10%)
+  4. total_value: Total amount including GST
+  [Additional detailed instructions...]
 ```
 
-The evaluation pipeline consists of two steps:
+### Original Huaifeng Notebook Prompts
+The system now includes **all prompts from the original Huaifeng_Test_InternVL.ipynb**, ensuring complete compatibility:
 
-1. Generate predictions for all SROIE images:
-   ```bash
-   python -m src.scripts.generate_predictions \
-     --test-image-dir data/sroie/images \
-     --output-dir output/predictions_sroie
-   ```
+```yaml
+# Conference and business analysis
+conference_relevance_prompt: |
+  <image>
+  Is this relevant to a claim about attending academic conference?
 
-2. Evaluate the predictions against ground truth:
-   ```bash
-   python -m src.scripts.evaluate_extraction \
-     --predictions-dir output/predictions_sroie \
-     --ground-truth-dir data/sroie/ground_truth
-   ```
+business_expense_prompt: |
+  <image>
+  Is this relevant to a claim about car expense?
 
-### Evaluation Results
+# Receipt extraction (matching original notebook)
+huaifeng_receipt_json_prompt: |
+  <image>
+  read the text and return information in JSON format. I need company name, address, phone number, date, ABN, and total amount
 
-After running the evaluation, results will be available in:
-- `output/evaluation_results.csv` - CSV format results
-- `output/evaluation_results.json` - Detailed JSON results
-- `output/evaluation_results.png` - Visualization of F1 scores by field
+# Multi-receipt processing
+multi_receipt_json_prompt: |
+  <image>
+  there are two receipts on this image. read the text and return information in JSON format. I need company name, address, phone number, date, ABN, and total amount
 
-The evaluation compares extraction performance on the following fields:
-- `date_value` - Date of the receipt
-- `store_name_value` - Name of the store
-- `tax_value` - Tax amount
-- `total_value` - Total amount
-- `prod_item_value` - Product names
-- `prod_quantity_value` - Quantities
-- `prod_price_value` - Prices
+# Detailed item-level extraction
+detailed_receipt_json_prompt: |
+  <image>
+  read the text and return information in JSON format. I need company name, address, phone number, date, item name, number of items, item price, and total amount
+```
 
-Note: Make sure to run the evaluation script from the project root directory for proper path resolution.
+### Available Prompt Categories
 
+| Category | Prompts | Use Case |
+|----------|---------|----------|
+| **Receipt Processing** | `default_receipt_prompt`, `australian_optimized_prompt` | Standard Australian receipt extraction |
+| **Huaifeng Compatible** | `huaifeng_receipt_json_prompt`, `multi_receipt_json_prompt` | Exact replication of original notebook |
+| **Business Analysis** | `business_expense_prompt`, `expense_relevance_prompt` | Expense claim relevance checking |
+| **Conference/Meeting** | `conference_relevance_prompt`, `speaker_list_prompt` | Academic/conference document processing |
+| **Detailed Extraction** | `detailed_receipt_json_prompt`, `strict_json_prompt` | Item-level detail extraction |
+| **Generic** | `document_description_prompt`, `simple_receipt_prompt` | General document analysis |
 
-## Synthetic Dataset Generation
+### Using Prompts
 
-You can generate synthetic receipt datasets for testing and development:
-
-### Generating Simple Receipts
-
+Specify which prompt to use in your `.env` file:
 ```bash
-# Activate the conda environment
+# Use original Huaifeng prompts for compatibility
+INTERNVL_PROMPT_NAME=huaifeng_receipt_json_prompt
+
+# Use Australian-optimized prompts for production
+INTERNVL_PROMPT_NAME=australian_optimized_prompt
+
+# Use for conference document analysis
+INTERNVL_PROMPT_NAME=conference_relevance_prompt
+```
+
+Or specify prompts dynamically in commands:
+```bash
+# Use specific prompt for single image
+python -m internvl.cli.internvl_single \
+  --image-path conference_program.jpg \
+  --prompt-name conference_relevance_prompt
+
+# Use multi-receipt prompt for batch processing
+python -m internvl.cli.internvl_batch \
+  --image-folder-path data/multi_receipts \
+  --prompt-name multi_receipt_json_prompt
+```
+
+## Post-Processing Pipeline
+
+### JSON Extraction
+- Extracts structured JSON from model text output
+- Handles multiple formats (markdown, raw JSON)
+- Robust error handling and fallbacks
+
+### Field Normalization
+- **Dates**: Standardized to DD/MM/YYYY (Australian format)
+- **Store Names**: Consistent capitalization and formatting
+- **Prices**: Decimal standardization and currency handling
+- **Text Fields**: Whitespace normalization
+
+### Evaluation Metrics
+- Field-level accuracy, precision, recall, F1-score
+- Support for both scalar and list fields
+- Comprehensive reporting and visualization
+
+## Environment Management
+
+### Local Development
+```bash
 conda activate internvl_env
-
-# Use Python module execution
-PYTHONPATH=$PWD python3 -m data.generators.simple_receipt_generator --num_receipts 20 --include_gst
+python -m internvl.cli.internvl_single --image-path test.jpg
 ```
 
-### Generating Advanced Receipts
-
+### Multi-User Systems
 ```bash
-# Activate the conda environment
-conda activate internvl_env
-
-# Use Python module execution
-python -m data.generators.receipt_generator --num_receipts 20 --image_size 2048
+# User-specific environment
+conda config --append envs_dirs ~/.conda/envs
+conda env create -f internvl_env.yml --prefix ~/.conda/envs/internvl_env
+conda activate ~/.conda/envs/internvl_env
 ```
 
-Parameters for simple receipt generator:
-- `--num_receipts`: Number of test receipts to generate (default: 20)
-- `--include_gst`: Flag to include GST (Goods and Services Tax) on the receipts
-- `--output_dir`: Output directory (overrides environment variable INTERNVL_SYNTHETIC_DATA_PATH)
+### Shared Environments
+See [docs/SHARED_ENVIRONMENTS.md](docs/SHARED_ENVIRONMENTS.md) for detailed setup instructions.
 
-Parameters for advanced receipt generator:
-- `--num_receipts`: Number of receipts to generate (default: 20)
-- `--image_size`: Size of output images (default: 2048)
-- `--seed`: Random seed for reproducibility (default: 42)
-- `--output_dir`: Output directory (overrides environment variable INTERNVL_SYNTHETIC_DATA_PATH)
+## Utilities
+
+### Environment Verification
+```bash
+python -m internvl.utils.verify_env
+```
+
+### Development Tools
+```bash
+# Available in internvl.utils.dev_tools
+python -m internvl.utils.dev_tools.test_path_resolution
+python -m internvl.utils.dev_tools.test_image_resolution
+```
+
+## GPU Configuration
+
+### Single GPU with Memory Constraints
+```bash
+# The system automatically applies 8-bit quantization
+export CUDA_VISIBLE_DEVICES=0  # Use specific GPU
+python -m internvl.cli.internvl_single --image-path test.jpg
+```
+
+### Multi-GPU Setup
+```bash
+# Automatic device mapping across all available GPUs
+# No configuration needed - system detects and configures automatically
+python -m internvl.cli.internvl_batch --image-folder-path data/images
+```
+
+## Deployment
+
+### KFP (Kubeflow Pipelines) Compatibility
+- Relative path support for container environments
+- Environment variable-based configuration
+- Module invocation pattern for consistent imports
+
+See [docs/KFP_COMPATIBILITY.md](docs/KFP_COMPATIBILITY.md) for detailed deployment instructions.
+
+## Contributing
+
+When adding new features:
+1. Follow the modular package structure
+2. Add appropriate tests in the relevant module
+3. Update documentation and examples
+4. Ensure compatibility with auto device configuration
+
+## Troubleshooting
+
+### Common Issues
+
+**Model Loading Errors**: Check your `INTERNVL_MODEL_PATH` in `.env`
+```bash
+python -m internvl.utils.verify_env  # Check environment setup
+```
+
+**GPU Memory Issues**: The system automatically applies quantization for single GPU setups
+```bash
+export CUDA_VISIBLE_DEVICES=0  # Limit to one GPU if needed
+```
+
+**Import Errors**: Ensure you're using the module invocation pattern:
+```bash
+python -m internvl.cli.internvl_single  # Correct
+python internvl/cli/internvl_single.py  # Incorrect
+```
+
+**Path Resolution Issues**: Check your `.env` configuration and ensure `INTERNVL_PROJECT_ROOT` is set correctly.
 
 ## License
 
-[MIT License](LICENSE)
+MIT License - see LICENSE file for details.
