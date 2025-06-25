@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import torch
-from transformers import AutoModel, AutoTokenizer
 from huggingface_hub.utils import HFValidationError
+from transformers import AutoModel, AutoTokenizer
 
 from internvl.utils.logging import get_logger
 from internvl.utils.path import enforce_module_invocation
