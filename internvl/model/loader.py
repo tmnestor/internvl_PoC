@@ -145,22 +145,36 @@ def load_model_and_tokenizer(
     else:
         logger.info(f"Using provided model path: {model_path}")
 
-    logger.info(f"Final model path for loading: {model_path}")
-
-    # Determine if it's a local model path
+    # Determine if it's a HuggingFace cache path (storage mapped checkpoint)
     path_obj = Path(model_path)
+    is_hf_cache_path = "models--" in str(path_obj) and "hub" in str(path_obj)
     is_local_model = (
         path_obj.is_absolute()
         or model_path.startswith("./")
         or model_path.startswith("../")
-    ) and Path(model_path).exists()
+    ) and Path(model_path).exists() and not is_hf_cache_path
 
-    if is_local_model:
+    if is_hf_cache_path:
+        # Convert HuggingFace cache path back to model ID
+        # Extract model ID from path like: models--OpenGVLab--InternVL3-8B
+        cache_dir_name = path_obj.name
+        if cache_dir_name.startswith("models--"):
+            model_id = cache_dir_name[8:].replace("--", "/")  # Remove "models--" and convert "--" to "/"
+            logger.info(f"Detected HuggingFace cache path, using model ID: {model_id}")
+            model_path = model_id
+            local_files_only = True  # Use cached files
+        else:
+            logger.warning(f"Unrecognized cache path format: {model_path}")
+            local_files_only = False
+    elif is_local_model:
         logger.info(f"Detected local model path: {model_path}")
         logger.info("Using local model files")
         local_files_only = True
     else:
         logger.info(f"Treating as HuggingFace model ID: {model_path}")
+        local_files_only = False
+
+    logger.info(f"Final model path for loading: {model_path}")
 
     # Auto-detect device configuration if not specified
     if auto_device_config and device is None:
