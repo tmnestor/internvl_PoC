@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import torch
 from transformers import AutoModel, AutoTokenizer
+from huggingface_hub.utils import HFValidationError
 
 from internvl.utils.logging import get_logger
 from internvl.utils.path import enforce_module_invocation
@@ -155,8 +156,11 @@ def load_model_and_tokenizer(
     ) and Path(model_path).exists()
 
     if is_local_model:
+        logger.info(f"Detected local model path: {model_path}")
         logger.info("Using local model files")
         local_files_only = True
+    else:
+        logger.info(f"Treating as HuggingFace model ID: {model_path}")
 
     # Auto-detect device configuration if not specified
     if auto_device_config and device is None:
@@ -208,10 +212,19 @@ def load_model_and_tokenizer(
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_path, **tokenizer_config)
         logger.info("Tokenizer loaded successfully")
-    except Exception as e:
-        logger.error(f"Error loading tokenizer: {e}")
-        logger.info("Trying with minimal parameters...")
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    except (HFValidationError, Exception) as e:
+        if isinstance(e, HFValidationError):
+            logger.error(f"HuggingFace validation error - forcing local-only mode: {e}")
+        else:
+            logger.error(f"Error loading tokenizer: {e}")
+        
+        logger.info("Trying with local-only parameters...")
+        # Force local_files_only=True to bypass HuggingFace Hub validation
+        minimal_config = {
+            "trust_remote_code": True,
+            "local_files_only": True
+        }
+        tokenizer = AutoTokenizer.from_pretrained(model_path, **minimal_config)
 
     # Load model
     try:
@@ -233,15 +246,18 @@ def load_model_and_tokenizer(
         logger.info(f"Model loaded successfully on {device_type}!")
         return model, tokenizer
 
-    except Exception as e:
-        logger.error(f"Error loading model: {e}")
+    except (HFValidationError, Exception) as e:
+        if isinstance(e, HFValidationError):
+            logger.error(f"HuggingFace validation error during model loading - forcing local-only mode: {e}")
+        else:
+            logger.error(f"Error loading model: {e}")
         logger.info("Trying fallback loading...")
 
-        # Fallback loading with simplified arguments
-        fallback_args = {"trust_remote_code": True}
-
-        if local_files_only:
-            fallback_args["local_files_only"] = True
+        # Fallback loading with local-only and simplified arguments
+        fallback_args = {
+            "trust_remote_code": True,
+            "local_files_only": True  # Force local files only
+        }
 
         # Apply basic device configuration for fallback
         if device_type == "cpu":
