@@ -227,13 +227,25 @@ def load_model_and_tokenizer(
         else:
             logger.error(f"Error loading tokenizer: {e}")
         
-        logger.info("Trying with local-only parameters...")
-        # Force local_files_only=True to bypass HuggingFace Hub validation
-        minimal_config = {
-            "trust_remote_code": True,
-            "local_files_only": True
-        }
-        tokenizer = AutoTokenizer.from_pretrained(model_path, **minimal_config)
+        logger.info("Trying to load tokenizer manually using Qwen tokenizer...")
+        # For InternVL models, use the underlying Qwen tokenizer directly
+        try:
+            from transformers import Qwen2TokenizerFast
+            logger.info("Using Qwen2TokenizerFast directly...")
+            tokenizer = Qwen2TokenizerFast.from_pretrained(
+                model_path,
+                trust_remote_code=True,
+                local_files_only=True
+            )
+        except Exception as qwen_error:
+            logger.error(f"Error loading Qwen tokenizer: {qwen_error}")
+            logger.info("Trying with basic AutoTokenizer and local files only...")
+            # Last resort - force local files only
+            minimal_config = {
+                "trust_remote_code": True,
+                "local_files_only": True
+            }
+            tokenizer = AutoTokenizer.from_pretrained(model_path, **minimal_config)
 
     # Load model
     try:
