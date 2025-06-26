@@ -357,17 +357,22 @@ key_value_receipt_prompt: |
   STORE: WOOLWORTHS
   TAX: 3.82
   TOTAL: 42.08
-  PRODUCTS: MILK 2L | BREAD MULTIGRAIN | EGGS FREE RANGE 12PK
+  PRODUCTS: Milk 2L | Bread Multigrain | Eggs Free Range 12pk
   QUANTITIES: 1 | 2 | 1
   PRICES: 4.50 | 8.00 | 7.60
   
-  IMPORTANT RULES:
-  - Use exact format shown above
+  FORMATTING REQUIREMENTS:
+  - Product names: Use Title Case (Milk 2L, not MILK 2L or milk 2l)
+  - Prices: Read carefully from receipt, match exact amounts shown
+  - Store names: Use ALL CAPITALS (WOOLWORTHS, COLES, ALDI)
+  - Dates: DD/MM/YYYY format (Australian standard)
+  - Use pipe (|) to separate multiple items in lists
   - Extract ALL products from the receipt
-  - Use pipe (|) to separate multiple items
-  - Store names should be in capitals
-  - GST (Goods and Services Tax) is 10% in Australia
-  - Dates must be in DD/MM/YYYY format (Australian standard)
   - Ensure products, quantities, and prices lists have same length
+  
+  CRITICAL: 
+  - Product names must be in Title Case format: "Chicken Breast" not "CHICKEN BREAST"
+  - Read prices carefully from receipt - accuracy is essential
+  - GST (Goods and Services Tax) is 10% in Australia
   
   Return ONLY the key-value pairs above. No explanations.
