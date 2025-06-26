@@ -301,3 +301,39 @@ enhanced_json_prompt: |
   {"date_value":"16/03/2023","store_name_value":"WOOLWORTHS","tax_value":"3.82","total_value":"42.08","prod_item_value":["MILK 2L","BREAD","EGGS"],"prod_quantity_value":["1","2","1"],"prod_price_value":["4.50","8.00","7.60"]}
 
   Return ONLY the JSON object. No explanations, no markdown, no extra text.
+
+# Australian business receipt prompt with comprehensive field extraction
+australian_business_receipt_prompt: |
+  <image>
+  EXTRACT ALL information from this Australian receipt and return ONLY valid JSON.
+
+  REQUIRED FIELDS:
+  - supplier_name: Business name providing goods/services
+  - supplier_abn: Australian Business Number (ABN) - 11 digits with spaces
+  - payer_name: Customer/member name if shown (or "" if not visible)
+  - invoice_date: Date in DD/MM/YYYY format (Australian standard)
+  - gst_amount: GST/Tax amount in dollars
+  - total_amount: Total amount paid including GST
+  - payment_method: How payment was made (Cash/Card/EFTPOS/etc)
+  - items: Array of product/service descriptions
+  - quantities: Array of quantities for each item (same order as items)
+  - item_prices: Array of individual prices for each item
+
+  AUSTRALIAN RECEIPT RULES:
+  - ABN format: "XX XXX XXX XXX" (11 digits with spaces)
+  - Date format: DD/MM/YYYY (day first, Australian standard)
+  - GST is 10% in Australia (1/11 of GST-inclusive total)
+  - Look for "GST", "Tax amount", or similar labels
+  - Common suppliers: Woolworths, Coles, ALDI, Bunnings, Costco, IGA, etc.
+  - Payment: Cash, EFTPOS, Credit, MasterCard, Visa, etc.
+
+  JSON SYNTAX:
+  - Use double quotes for ALL strings
+  - NO trailing commas
+  - Numbers as strings: "58.88" not 58.88
+  - Empty fields: "" for missing data
+
+  EXAMPLE OUTPUT:
+  {"supplier_name":"COSTCO WHOLESALE AUSTRALIA","supplier_abn":"57 104 012 893","payer_name":"","invoice_date":"08/06/2024","gst_amount":"5.35","total_amount":"58.88","payment_method":"MASTERCARD CREDIT","items":["13ULP FUEL"],"quantities":["32.230L"],"item_prices":["58.88"]}
+
+  Extract ALL visible information. Return ONLY the JSON object.
