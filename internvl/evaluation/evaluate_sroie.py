@@ -19,7 +19,7 @@ from internvl.utils.logging import get_logger, setup_logging
 from internvl.utils.path import enforce_module_invocation
 
 # Enforce module invocation pattern
-enforce_module_invocation("src.internvl.evaluation")
+enforce_module_invocation("internvl.evaluation")
 
 logger = get_logger(__name__)
 
@@ -120,7 +120,7 @@ def main():
     logger.info("Step 1: Generating predictions on SROIE images...")
 
     generate_args = [
-        "src.scripts.generate_predictions",
+        "internvl.evaluation.generate_predictions",
         "--test-image-dir",
         str(sroie_image_dir),
         "--output-dir",
@@ -130,7 +130,7 @@ def main():
     if prompt_name:
         generate_args.extend(["--prompt-name", prompt_name])
 
-    if not run_module("src.scripts.generate_predictions", generate_args[1:]):
+    if not run_module("internvl.evaluation.generate_predictions", generate_args[1:]):
         logger.error("Prediction generation failed!")
         return 1
 
@@ -142,7 +142,7 @@ def main():
     logger.info("Step 2: Evaluating predictions against ground truth...")
 
     evaluate_args = [
-        "src.scripts.evaluate_extraction",
+        "internvl.evaluation.evaluate_extraction",
         "--predictions-dir",
         str(predictions_dir),
         "--ground-truth-dir",
@@ -154,7 +154,7 @@ def main():
     if args.show_examples:
         evaluate_args.append("--show-examples")
 
-    if not run_module("src.scripts.evaluate_extraction", evaluate_args[1:]):
+    if not run_module("internvl.evaluation.evaluate_extraction", evaluate_args[1:]):
         logger.error("Evaluation failed!")
         return 1
 
