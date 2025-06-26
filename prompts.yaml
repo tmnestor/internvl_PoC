@@ -141,7 +141,7 @@ australian_optimized_prompt: |
 
   JSON Output:
   {
-  "date_value": "16/3/2023",
+  "date_value": "16/03/2023",
   "store_name_value": "WOOLWORTHS METRO",
   "tax_value": "3.82",
   "total_value": "42.08",
@@ -166,7 +166,7 @@ australian_optimized_prompt: |
   - For "tax_value" extract the GST (Goods and Services Tax) amount, typically 10% of the pre-tax total
   - GST is often shown as a separate line item on Australian receipts
   - Dates in Australia typically use the DD/MM/YYYY format
-  - Prices should include the '$' symbol and two decimal places
+  - Prices should include the $ symbol and two decimal places
   - Ensure product items, quantities, and prices are aligned in the same order
 
   Only return the values for the seven keys specified. Do not return any additional key-value pairs.
