@@ -241,3 +241,17 @@ document_description_prompt: |
 expense_relevance_prompt: |
   <image>
   Is this relevant to a business expense claim?
+
+# Minimal simplified prompt to force SROIE schema output
+minimal_sroie_prompt: |
+  <image>
+  Output JSON with these exact keys:
+  {
+  "date_value": "",
+  "store_name_value": "",
+  "tax_value": "",
+  "total_value": "",
+  "prod_item_value": [],
+  "prod_quantity_value": [],
+  "prod_price_value": []
+  }
