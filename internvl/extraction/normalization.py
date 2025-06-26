@@ -4,9 +4,8 @@ Field normalization utilities for InternVL Evaluation
 This module provides functions for normalizing field values extracted from model output.
 """
 
-import os
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 
 import dateparser
 
@@ -16,23 +15,7 @@ from internvl.utils import get_logger
 # Get logger for this module
 logger = get_logger(__name__)
 
-# Import confidence scoring if available
-try:
-    from .confidence import (
-        calculate_confidence_score,
-        get_confidence_summary,
-        should_reprocess_prediction,
-    )
-    CONFIDENCE_AVAILABLE = True
-except ImportError:
-    logger.warning("Confidence scoring module not available")
-    CONFIDENCE_AVAILABLE = False
-    def calculate_confidence_score(_prediction):
-        return 1.0, {}
-    def should_reprocess_prediction(_confidence, _threshold):
-        return False
-    def get_confidence_summary(confidence, _components):
-        return f"Confidence: {confidence:.2f}"
+# Confidence scoring imports temporarily removed for emergency restore
 
 
 def normalize_date(date_str: str) -> str:
@@ -135,16 +118,15 @@ def normalize_number(value_str: str) -> str:
         return value_str
 
 
-def post_process_prediction(raw_text: str, enable_confidence_scoring: Optional[bool] = None) -> Dict[str, Any]:
+def post_process_prediction(raw_text: str) -> Dict[str, Any]:
     """
     Process raw model output to extract and normalize JSON data.
 
     Args:
         raw_text: Raw text output from the model
-        enable_confidence_scoring: Override for confidence scoring (None uses env var)
 
     Returns:
-        Normalized JSON object with optional confidence metadata
+        Normalized JSON object
     """
     # Try to extract JSON from text
     data = extract_json_from_text(raw_text)
@@ -165,83 +147,9 @@ def post_process_prediction(raw_text: str, enable_confidence_scoring: Optional[b
     if "total_value" in data:
         data["total_value"] = normalize_number(data["total_value"])
 
-    # Add confidence scoring if enabled
-    if _is_confidence_scoring_enabled(enable_confidence_scoring):
-        confidence, components = calculate_confidence_score(data)
-        
-        # Add confidence metadata (prefixed to avoid conflicts)
-        data["_confidence_score"] = confidence
-        data["_confidence_components"] = components
-        data["_confidence_summary"] = get_confidence_summary(confidence, components)
-        
-        logger.info(f"Confidence scoring: {data['_confidence_summary']}")
+# Confidence scoring temporarily disabled for emergency restore
 
     return data
 
 
-def post_process_with_retry(
-    raw_text: str, 
-    image_path: str,
-    retry_callback: Optional[callable] = None,
-    enable_confidence_scoring: Optional[bool] = None
-) -> Tuple[Dict[str, Any], bool]:
-    """
-    Process prediction with optional retry for low-confidence results.
-    
-    Args:
-        raw_text: Raw text output from the model
-        image_path: Path to the image (for retry)
-        retry_callback: Function to call for retry (model, tokenizer, fallback_prompt) -> raw_text
-        enable_confidence_scoring: Override for confidence scoring
-        
-    Returns:
-        Tuple of (processed_prediction, was_retried)
-    """
-    # Initial processing
-    data = post_process_prediction(raw_text, enable_confidence_scoring)
-    
-    if not _is_confidence_scoring_enabled(enable_confidence_scoring):
-        return data, False
-    
-    # Check if retry is needed
-    confidence = data.get("_confidence_score", 1.0)
-    threshold = float(os.getenv("INTERNVL_CONFIDENCE_THRESHOLD", "0.7"))
-    
-    if should_reprocess_prediction(confidence, threshold) and retry_callback:
-        logger.info(f"Low confidence ({confidence:.2f} < {threshold}), attempting retry...")
-        
-        try:
-            # Get fallback prompt name
-            fallback_prompt = os.getenv("INTERNVL_FALLBACK_PROMPT_NAME", "ultra_strict_json_prompt")
-            
-            # Attempt retry
-            retry_raw_text = retry_callback(image_path, fallback_prompt)
-            retry_data = post_process_prediction(retry_raw_text, enable_confidence_scoring)
-            
-            # Compare confidence scores
-            retry_confidence = retry_data.get("_confidence_score", 0.0)
-            
-            if retry_confidence > confidence:
-                logger.info(f"Retry improved confidence: {confidence:.2f} -> {retry_confidence:.2f}")
-                retry_data["_retry_improved"] = True
-                retry_data["_original_confidence"] = confidence
-                return retry_data, True
-            else:
-                logger.info(f"Retry did not improve confidence: {retry_confidence:.2f} <= {confidence:.2f}")
-                data["_retry_attempted"] = True
-                data["_retry_confidence"] = retry_confidence
-                
-        except Exception as e:
-            logger.error(f"Retry failed: {e}")
-            data["_retry_failed"] = str(e)
-    
-    return data, False
-
-
-def _is_confidence_scoring_enabled(override: Optional[bool] = None) -> bool:
-    """Check if confidence scoring is enabled."""
-    if override is not None:
-        return override and CONFIDENCE_AVAILABLE
-    
-    env_enabled = os.getenv("INTERNVL_ENABLE_CONFIDENCE_SCORING", "false").lower()
-    return env_enabled in ("true", "yes", "1", "y") and CONFIDENCE_AVAILABLE
+# All confidence scoring functions temporarily removed for emergency restore
