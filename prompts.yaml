@@ -128,21 +128,24 @@ detailed_receipt_prompt: |
 # Optimized Australian prompt for better field extraction accuracy
 australian_optimized_prompt: |
   <image>
+  You MUST extract ALL product information from this Australian receipt. Look carefully at every line item.
+
   Extract these seven fields from the provided Australian receipt image:
-  1. date_value
-  2. store_name_value
-  3. tax_value (GST amount)
-  4. total_value
-  5. prod_item_value
-  6. prod_quantity_value
-  7. prod_price_value
+  1. date_value - The purchase date in DD/MM/YYYY format
+  2. store_name_value - The store name (WOOLWORTHS, COLES, ALDI, IGA, etc.)
+  3. tax_value - The GST amount (look for "GST", "TAX", or 10% calculation)
+  4. total_value - The final total amount
+  5. prod_item_value - ALL products purchased (as a list)
+  6. prod_quantity_value - Quantity for each product (as a list, same order as products)
+  7. prod_price_value - Price for each product (as a list, same order as products)
 
-  Return the results in JSON format. An example JSON format is:
+  CRITICAL: You MUST extract ALL products, quantities, and prices. Do not leave these lists empty.
 
-  JSON Output:
+  Return ONLY valid JSON in this exact format:
+
   {
   "date_value": "16/03/2023",
-  "store_name_value": "WOOLWORTHS METRO",
+  "store_name_value": "WOOLWORTHS",
   "tax_value": "3.82",
   "total_value": "42.08",
   "prod_item_value": [
@@ -162,15 +165,13 @@ australian_optimized_prompt: |
   ]
   }
 
-  Important Notes for Australian Receipts:
-  - For "tax_value" extract the GST (Goods and Services Tax) amount, typically 10% of the pre-tax total
-  - GST is often shown as a separate line item on Australian receipts
-  - Dates in Australia typically use the DD/MM/YYYY format
-  - Prices should include the $ symbol and two decimal places
-  - Ensure product items, quantities, and prices are aligned in the same order
-
-  Only return the values for the seven keys specified. Do not return any additional key-value pairs.
-  Do not output any additional information, notes, reasoning, or explanations. Output only the valid JSON.
+  REQUIREMENTS:
+  - Extract the purchase date in DD/MM/YYYY format
+  - Extract GST/tax amount (typically 10% in Australia)
+  - Extract ALL individual products, quantities, and prices
+  - Ensure all three product lists have the same length
+  - Use clean values without extra commas or symbols
+  - Output ONLY the JSON object, no other text
 
 # ========================================================================
 # Prompts from Huaifeng_Test_InternVL.ipynb - Original Test Cases
