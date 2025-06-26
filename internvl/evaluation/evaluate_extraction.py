@@ -181,7 +181,7 @@ def run_evaluation(
 
     # Calculate metrics
     overall_metrics, field_metrics = calculate_field_metrics(
-        predictions_dir, ground_truth_dir, fields=fields, normalize=normalize
+        predictions_dir, ground_truth_dir, fields=fields if fields else None, normalize=normalize
     )
 
     # Create DataFrame for better display
@@ -309,7 +309,7 @@ def run_evaluation(
                 "date_value", "store_name_value", "tax_value", "total_value",
                 "prod_item_value", "prod_quantity_value", "prod_price_value"
             ]
-            fields_to_use = fields if fields is not None and len(fields) > 0 else default_fields
+            fields_to_use = fields if fields and len(fields) > 0 else default_fields
             for field in fields_to_use:
                 pred_val = data["prediction"].get(field, "")
                 gt_val = data["ground_truth"].get(field, "")
@@ -447,7 +447,7 @@ def main():
     )
 
     # Parse fields
-    fields = args.fields.split(",") if args.fields else None
+    fields = args.fields.split(",") if args.fields else []
 
     # Run evaluation
     try:
