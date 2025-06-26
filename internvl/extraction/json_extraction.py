@@ -47,15 +47,20 @@ def extract_json_from_text(text: str) -> Dict[str, Any]:
             # Try each potential JSON block (prioritize longer ones)
             markdown_matches.sort(key=len, reverse=True)
             for potential_json in markdown_matches:
-                cleaned_json = _clean_and_fix_json(potential_json.strip())
-                logger.debug(f"Original JSON:\n{potential_json.strip()}")
-                logger.debug(f"Cleaned JSON:\n{cleaned_json}")
+                original_json = potential_json.strip()
+                logger.info(f"Processing JSON block of length {len(original_json)}")
+                logger.debug(f"Original JSON:\n{repr(original_json)}")
+                
+                cleaned_json = _clean_and_fix_json(original_json)
+                logger.debug(f"Cleaned JSON:\n{repr(cleaned_json)}")
+                
                 try:
                     result = json.loads(cleaned_json)
                     logger.info("Successfully parsed JSON after cleaning")
                     return result
                 except json.JSONDecodeError as e:
                     logger.warning(f"JSON parsing failed after cleaning: {e}")
+                    logger.warning(f"Failed at character position {e.pos if hasattr(e, 'pos') else 'unknown'}")
                     continue
 
         # If markdown format failed, try general JSON pattern
@@ -88,62 +93,135 @@ def _clean_and_fix_json(json_text: str) -> str:
     # Remove leading/trailing whitespace
     cleaned = json_text.strip()
     
-    # CRITICAL: Remove actual control characters that cause "Invalid control character" errors
-    # Replace actual newlines with \n in the text first
-    import string
-    printable = set(string.printable)
-    cleaned = ''.join(c if c in printable else ' ' for c in cleaned)
+    # CRITICAL DEBUG: Identify problematic characters causing "Invalid control character" errors
+    problematic_chars = []
+    for i, char in enumerate(cleaned):
+        char_code = ord(char)
+        # Identify characters that could cause JSON parsing issues
+        if char_code < 32 and char not in '\t\n\r':
+            problematic_chars.append((i, char, char_code, repr(char)))
     
-    # Fix the orphaned comma pattern specifically: ",\n  ",
-    cleaned = re.sub(r'",\s*\n\s*",\s*\n', '",\n', cleaned)
+    if problematic_chars:
+        logger.warning(f"Found {len(problematic_chars)} problematic control characters:")
+        for pos, _char, code, repr_char in problematic_chars[:5]:  # Log first 5
+            logger.warning(f"  Position {pos}: char={repr_char}, code={code}")
     
-    # Fix orphaned commas on their own lines (very common in this model's output)
+    # AGGRESSIVE: Direct reconstruction for these specific malformed patterns
+    # The patterns are so consistent that we can target them directly
+    if '",\n  ",' in cleaned or '"\n  "' in cleaned or '",\n             ' in cleaned:
+        logger.info("Detected specific malformed patterns, using direct reconstruction")
+        return _reconstruct_json(cleaned)
+    
+    # ULTRA-AGGRESSIVE: Remove ALL control characters and problematic bytes
+    # This is more aggressive than before - remove anything suspicious
+    cleaned = _ultra_sanitize_json(cleaned)
+    
+    # Fix the most common patterns first
+    
+    # 1. Fix orphaned comma lines: ",\n
     cleaned = re.sub(r'\n\s*",\s*\n', ',\n', cleaned)
     
-    # Fix lines that are just commas with whitespace
-    cleaned = re.sub(r'\n\s*,\s*\n', '\n', cleaned)
+    # 2. Fix unclosed quotes followed by newlines and closing quotes
+    # Pattern: "value\n  "\n becomes "value",\n
+    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"\s*\n', r': "\1",\n', cleaned)
     
-    # Fix pattern: "value"\n  " (unclosed quote with newline)
-    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"\s*,?\s*\n', r': "\1",\n', cleaned)
-    
-    # Fix unclosed quotes at end of JSON values (before closing brace)
-    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"\s*\n\s*}', r': "\1"\n}', cleaned)
-    
-    # Fix missing commas between fields - improved pattern
+    # 3. Fix missing commas between properly quoted fields
     cleaned = re.sub(r'"\s*\n\s*"([^"]+)":', r'",\n  "\1":', cleaned)
     
-    # Fix missing commas between numeric/string values and next key
-    cleaned = re.sub(r'(\d+|\w+)\s*\n\s*"([^"]+)":', r'\1,\n  "\2":', cleaned)
+    # 4. Fix missing commas between numeric values and next key
+    cleaned = re.sub(r'(\d+(?:\.\d+)?)\s*\n\s*"([^"]+)":', r'\1,\n  "\2":', cleaned)
     
-    # Fix unescaped actual newlines in quoted strings
-    def fix_newlines_in_quoted_strings(match):
+    # 5. Fix multi-line addresses that span multiple lines
+    # Pattern: "address": "Line1\n             Line2\n             Line3",
+    def fix_multiline_address(match):
         key = match.group(1)
-        value = match.group(2)
-        # Replace actual newlines with \n
-        value = value.replace('\n', '\\n').replace('\r', '\\r')
-        return f'"{key}": "{value}"'
+        first_line = match.group(2)
+        rest = match.group(3)
+        # Clean up the rest and escape newlines
+        lines = [line.strip() for line in rest.split('\n') if line.strip()]
+        if lines:
+            full_address = first_line + '\\n' + '\\n'.join(lines)
+        else:
+            full_address = first_line
+        return f'"{key}": "{full_address}"'
     
-    # Apply to quoted string values that contain actual newlines
-    cleaned = re.sub(r'"([^"]+)":\s*"([^"]*\n[^"]*)"', fix_newlines_in_quoted_strings, cleaned)
+    cleaned = re.sub(r'"(address)":\s*"([^"]*?)"\s*\n\s*([^,}]+?)(?=\s*[,}])', 
+                    fix_multiline_address, cleaned, flags=re.DOTALL)
     
-    # Fix addresses with multiple unquoted lines
-    # Pattern: "address": "Line1\n             Line2",
-    cleaned = re.sub(r'("address":\s*"[^"]*?)\n\s*([^",\n}]+?)\n\s*([^",\n}]+?)"', 
-                    lambda m: f'{m.group(1)}\\n{m.group(2).strip()}\\n{m.group(3).strip()}"', 
-                    cleaned)
+    # 6. Fix unescaped newlines in any quoted strings
+    def escape_newlines_in_quotes(match):
+        content = match.group(1)
+        # Replace literal newlines with escaped ones
+        content = content.replace('\n', '\\n').replace('\r', '\\r')
+        return f'"{content}"'
     
-    # Fix single quotes to double quotes
-    cleaned = cleaned.replace("'", '"')
+    # Apply to any quoted strings that contain literal newlines
+    cleaned = re.sub(r'"([^"]*\n[^"]*)"', escape_newlines_in_quotes, cleaned)
     
-    # Fix unquoted keys
-    cleaned = re.sub(r'(\s*?)([a-zA-Z_][a-zA-Z0-9_]*)(\s*?):', r'\1"\2"\3:', cleaned)
-    
-    # Remove trailing commas before closing braces
+    # 7. Remove trailing commas before closing braces
     cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
     
-    # Last resort: try to salvage severely malformed JSON by reconstructing it
-    if not _is_valid_json_structure(cleaned):
-        cleaned = _reconstruct_json(cleaned)
+    # 8. Final validation with detailed error reporting
+    try:
+        json.loads(cleaned)
+        logger.info("JSON validation passed after cleaning")
+        return cleaned
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON still invalid after cleaning: {e}")
+        logger.error(f"Error at position {getattr(e, 'pos', 'unknown')}")
+        if hasattr(e, 'pos') and e.pos < len(cleaned):
+            start = max(0, e.pos - 20)
+            end = min(len(cleaned), e.pos + 20)
+            context = cleaned[start:end]
+            logger.error(f"Context around error: {repr(context)}")
+        
+        # Last resort: full reconstruction
+        logger.info("Standard cleaning failed, falling back to reconstruction")
+        return _reconstruct_json(json_text)  # Use original text for reconstruction
+
+
+def _ultra_sanitize_json(text: str) -> str:
+    """
+    Ultra-aggressive JSON sanitization to remove problematic characters.
+    
+    This function removes or replaces characters that commonly cause
+    "Invalid control character" errors in JSON parsing.
+    """
+    # Step 1: Remove or replace control characters more aggressively
+    sanitized = []
+    for char in text:
+        char_code = ord(char)
+        
+        # Allow only safe ASCII characters and essential whitespace
+        if char_code == 9:  # Tab -> space
+            sanitized.append(' ')
+        elif char_code == 10:  # Newline -> keep
+            sanitized.append(char)
+        elif char_code == 13:  # Carriage return -> ignore
+            continue
+        elif char_code < 32:  # Other control characters -> space
+            sanitized.append(' ')
+        elif char_code == 127:  # DEL character -> space
+            sanitized.append(' ')
+        elif char_code > 127:  # Non-ASCII -> try to preserve if printable
+            # For now, replace with space to be safe
+            sanitized.append(' ')
+        else:
+            sanitized.append(char)
+    
+    cleaned = ''.join(sanitized)
+    
+    # Step 2: Clean up excessive whitespace created by replacements
+    # Replace multiple spaces with single space
+    cleaned = re.sub(r' +', ' ', cleaned)
+    
+    # Step 3: Fix specific problematic sequences that can arise
+    # Remove orphaned quote characters that can cause issues
+    cleaned = re.sub(r'\n\s*"\s*\n', '\n', cleaned)
+    
+    # Step 4: Ensure proper JSON structure after sanitization
+    # Fix broken quoted strings
+    cleaned = re.sub(r'"([^"]*?)\s+"\s*:', r'"\1":', cleaned)
     
     return cleaned
 
@@ -177,50 +255,71 @@ def _reconstruct_json(malformed_json: str) -> str:
     # More aggressive pattern matching for key-value extraction
     # Look for various patterns that might represent key-value pairs
     patterns = [
-        r'"([^"]+)"\s*:\s*"([^"]*)"',  # "key": "value"
-        r'"([^"]+)"\s*:\s*([^,\n}]+)',  # "key": value
-        r'([a-zA-Z_]+)\s*:\s*"([^"]*)"',  # key: "value"
-        r'([a-zA-Z_]+)\s*:\s*([^,\n}]+)',  # key: value
+        r'"([^"]+)"\s*:\s*"([^"]*)"',  # "key": "value" (standard)
+        r'"([^"]+)"\s*:\s*([^,\n}]+)',  # "key": value (unquoted value)
+        r'"([^"]+)"\s*:\s*"([^"]*?)\s*\n[^"]*?"',  # "key": "value with newlines"
+        r'([a-zA-Z_]+)\s*:\s*"([^"]*)"',  # key: "value" (unquoted key)
+        r'([a-zA-Z_]+)\s*:\s*([^,\n}]+)',  # key: value (both unquoted)
+        # Specific patterns for this model's output
+        r'"(company_name|address|phone_number|date|ABN|total_amount)"\s*:\s*"([^"]*?)(?:\s*\n[^"]*?)*"',
+        r'"(company_name|address|phone_number|date|ABN|total_amount)"\s*:\s*([^,\n}]+)',
     ]
     
     extracted_pairs = {}
     
-    for pattern in patterns:
-        matches = re.findall(pattern, malformed_json)
-        for key, value in matches:
-            # Clean the key
-            key = key.strip().lower().replace(' ', '_')
-            
-            # Map common variations to standard field names
-            key_mappings = {
-                'company': 'company_name',
-                'store': 'company_name',
-                'business': 'company_name',
-                'phone': 'phone_number',
-                'tel': 'phone_number',
-                'telephone': 'phone_number',
-                'total': 'total_amount',
-                'amount': 'total_amount',
-                'price': 'total_amount',
-            }
-            
-            # Apply key mapping
-            for variant, standard in key_mappings.items():
-                if variant in key:
-                    key = standard
-                    break
-            
-            # Clean the value
-            value = value.strip()
-            
-            # Remove trailing quotes, newlines, and extra whitespace
-            value = re.sub(r'["\']\s*$', '', value)
-            value = re.sub(r'\s*\n.*$', '', value, flags=re.DOTALL)
-            value = value.strip()
-            
-            # Only keep non-empty values and valid field names
-            if value and key in expected_fields:
-                extracted_pairs[key] = value
+    # First, try to extract using the exact malformed pattern this model produces
+    # Pattern: "key": "start_of_value\n  "\n becomes "key": "start_of_value"
+    malformed_pattern = r'"([^"]+)"\s*:\s*"([^"]*?)(?:\s*\n\s*"|\s*\n\s*$)'
+    malformed_matches = re.findall(malformed_pattern, malformed_json)
+    
+    for key, value in malformed_matches:
+        key = key.strip().lower().replace(' ', '_')
+        value = value.strip()
+        if key in expected_fields and value:
+            extracted_pairs[key] = value
+            logger.debug(f"Extracted from malformed pattern: {key} = {value}")
+    
+    # If we got some good matches, use them; otherwise fall back to general patterns
+    if len(extracted_pairs) >= 3:  # If we got at least 3 fields, consider it successful
+        logger.info(f"Successfully extracted {len(extracted_pairs)} fields using malformed pattern matching")
+    else:
+        # Fall back to general pattern matching
+        for pattern in patterns:
+            matches = re.findall(pattern, malformed_json)
+            for key, value in matches:
+                # Clean the key
+                key = key.strip().lower().replace(' ', '_')
+                
+                # Map common variations to standard field names
+                key_mappings = {
+                    'company': 'company_name',
+                    'store': 'company_name',
+                    'business': 'company_name',
+                    'phone': 'phone_number',
+                    'tel': 'phone_number',
+                    'telephone': 'phone_number',
+                    'total': 'total_amount',
+                    'amount': 'total_amount',
+                    'price': 'total_amount',
+                }
+                
+                # Apply key mapping
+                for variant, standard in key_mappings.items():
+                    if variant in key:
+                        key = standard
+                        break
+                
+                # Clean the value
+                value = value.strip()
+                
+                # Remove trailing quotes, newlines, and extra whitespace
+                value = re.sub(r'["\']\s*$', '', value)
+                value = re.sub(r'\s*\n.*$', '', value, flags=re.DOTALL)
+                value = value.strip()
+                
+                # Only keep non-empty values and valid field names
+                if value and key in expected_fields:
+                    extracted_pairs[key] = value
     
     # Build the reconstructed JSON
     reconstructed = "{\n"
