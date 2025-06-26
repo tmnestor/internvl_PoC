@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 def extract_json_from_text(text: str) -> Dict[str, Any]:
     """
-    Extract JSON object from model output text.
+    Extract JSON object from model output text with robust error handling.
 
     Args:
         text: Raw model output text
@@ -47,8 +47,9 @@ def extract_json_from_text(text: str) -> Dict[str, Any]:
             # Try each potential JSON block (prioritize longer ones)
             markdown_matches.sort(key=len, reverse=True)
             for potential_json in markdown_matches:
+                cleaned_json = _clean_and_fix_json(potential_json.strip())
                 try:
-                    return json.loads(potential_json.strip())
+                    return json.loads(cleaned_json)
                 except json.JSONDecodeError:
                     continue
 
@@ -57,23 +58,67 @@ def extract_json_from_text(text: str) -> Dict[str, Any]:
         matches = re.findall(json_pattern, text)
 
         for potential_json in matches:
+            cleaned_json = _clean_and_fix_json(potential_json)
             try:
-                # Try to parse the JSON
-                return json.loads(potential_json)
+                return json.loads(cleaned_json)
             except json.JSONDecodeError:
-                # If that fails, try to fix common issues
-                try:
-                    # Fix single quotes to double quotes
-                    fixed_json = potential_json.replace("'", '"')
-                    # Fix unquoted keys
-                    fixed_json = re.sub(r"(\s*?)(\w+)(\s*?):", r'\1"\2"\3:', fixed_json)
-                    return json.loads(fixed_json)
-                except json.JSONDecodeError:
-                    continue
+                continue
+                
     except Exception as e:
         logger.error(f"Error extracting JSON from text: {e}")
 
     return default_json
+
+
+def _clean_and_fix_json(json_text: str) -> str:
+    """
+    Clean and fix common JSON formatting issues from model output.
+    
+    Args:
+        json_text: Raw JSON text that may have formatting issues
+        
+    Returns:
+        Cleaned JSON text
+    """
+    # Remove leading/trailing whitespace
+    cleaned = json_text.strip()
+    
+    # Fix missing commas between fields (common issue)
+    # Look for patterns like: "value"\n  "next_key" and add comma
+    cleaned = re.sub(r'"\s*\n\s*"([^"]+)":', r'",\n  "\1":', cleaned)
+    
+    # Fix missing commas before closing quotes
+    # Look for patterns like: value"\n} and add comma
+    cleaned = re.sub(r'([^,])\s*"\s*\n\s*}', r'\1"\n}', cleaned)
+    
+    # Fix unescaped newlines in string values
+    # Replace actual newlines with \n in quoted strings
+    def fix_newlines_in_strings(match):
+        content = match.group(1)
+        # Replace literal newlines with escaped newlines
+        content = content.replace('\n', '\\n')
+        return f'"{content}"'
+    
+    # Apply newline fixing to quoted strings
+    cleaned = re.sub(r'"([^"]*\n[^"]*)"', fix_newlines_in_strings, cleaned)
+    
+    # Fix unclosed quotes at end of values
+    # Look for patterns like: "value and add closing quote
+    cleaned = re.sub(r':\s*"([^"\n]+)\s*\n', r': "\1",\n', cleaned)
+    
+    # Fix single quotes to double quotes
+    cleaned = cleaned.replace("'", '"')
+    
+    # Fix unquoted keys
+    cleaned = re.sub(r'(\s*?)([a-zA-Z_][a-zA-Z0-9_]*)(\s*?):', r'\1"\2"\3:', cleaned)
+    
+    # Remove trailing commas before closing braces
+    cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
+    
+    # Fix missing quotes around string values that contain spaces
+    # This is a more aggressive fix - only apply if standard parsing fails
+    
+    return cleaned
 
 
 def extract_json_from_response(

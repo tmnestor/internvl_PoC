@@ -194,7 +194,27 @@ speaker_list_prompt: |
 # Basic JSON extraction for receipts (company, address, phone, date, ABN, total)
 huaifeng_receipt_json_prompt: |
   <image>
-  read the text and return information in JSON format. I need company name, address, phone number, date, ABN, and total amount
+  Extract receipt information and return ONLY valid JSON format.
+
+  Required fields:
+  - company_name: Store/company name
+  - address: Store address (escape newlines as \\n)
+  - phone_number: Phone number
+  - date: Date in DD/MM/YYYY format
+  - ABN: Australian Business Number
+  - total_amount: Total amount as number
+
+  Example format:
+  {
+    "company_name": "WOOLWORTHS",
+    "address": "123 Main St, Sydney NSW 2000",
+    "phone_number": "(02) 1234 5678",
+    "date": "15/06/2024",
+    "ABN": "88 000 014 675",
+    "total_amount": 45.67
+  }
+
+  IMPORTANT: Return ONLY the JSON object. No additional text, explanations, or formatting.
 
 # Multi-receipt JSON extraction prompt
 multi_receipt_json_prompt: |
