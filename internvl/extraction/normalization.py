@@ -7,7 +7,7 @@ This module provides functions for normalizing field values extracted from model
 import re
 from typing import Any, Dict
 
-from internvl.extraction.json_extraction_fixed import extract_json_from_text
+from internvl.extraction.json_extraction_fixed import extract_structured_data
 from internvl.utils import get_logger
 
 # Get logger for this module
@@ -111,16 +111,18 @@ def normalize_number(value_str: str) -> str:
 
 def post_process_prediction(raw_text: str) -> Dict[str, Any]:
     """
-    Process raw model output to extract and normalize JSON data.
+    Process raw model output to extract and normalize structured data.
+    
+    Uses hybrid extraction: tries key-value format first, then JSON fallback.
 
     Args:
         raw_text: Raw text output from the model
 
     Returns:
-        Normalized JSON object
+        Normalized structured data object
     """
-    # Try to extract JSON from text
-    data = extract_json_from_text(raw_text)
+    # Use hybrid extraction (KV format first, then JSON fallback)
+    data = extract_structured_data(raw_text)
 
     if not data:
         return {"error": "Could not extract valid JSON"}

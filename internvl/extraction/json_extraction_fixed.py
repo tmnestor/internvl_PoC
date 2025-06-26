@@ -425,6 +425,183 @@ def _reconstruct_from_patterns(malformed_text: str) -> str:
     return result
 
 
+def parse_kv_format(text: str) -> Dict[str, Any]:
+    """
+    Parse key-value format output from LLM.
+    
+    Expected format:
+    DATE: 05/05/2025
+    STORE: WOOLWORTHS
+    TAX: 12.82
+    TOTAL: 140.98
+    PRODUCTS: Milk 2L | Chicken Breast | Rice 1kg
+    QUANTITIES: 1 | 2 | 1
+    PRICES: 4.50 | 8.00 | 7.60
+    
+    Args:
+        text: Raw model output text in key-value format
+        
+    Returns:
+        Parsed dictionary with standardized SROIE schema keys
+    """
+    logger.info("Attempting key-value format parsing")
+    
+    data = {}
+    
+    # Key mapping from KV format to SROIE schema
+    key_mappings = {
+        'date': 'date_value',
+        'store': 'store_name_value', 
+        'tax': 'tax_value',
+        'total': 'total_value',
+        'products': 'prod_item_value',
+        'quantities': 'prod_quantity_value',
+        'prices': 'prod_price_value'
+    }
+    
+    # Split text into lines and process each line
+    lines = text.strip().split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if not line or ':' not in line:
+            continue
+            
+        # Split on first colon to handle values with colons
+        key, value = line.split(':', 1)
+        key = key.strip().lower()
+        value = value.strip()
+        
+        if not value:
+            continue
+            
+        # Map key to SROIE schema
+        schema_key = key_mappings.get(key)
+        if not schema_key:
+            # Try partial matches for flexibility
+            for kv_key, schema_key_candidate in key_mappings.items():
+                if kv_key in key:
+                    schema_key = schema_key_candidate
+                    break
+        
+        if schema_key:
+            # Handle array values with pipe delimiter
+            if '|' in value:
+                # Split by pipe and clean each item
+                items = [item.strip() for item in value.split('|')]
+                # Filter out empty items
+                items = [item for item in items if item]
+                data[schema_key] = items
+                logger.debug(f"Extracted array {schema_key}: {items}")
+            else:
+                # Single value
+                data[schema_key] = value
+                logger.debug(f"Extracted {schema_key}: '{value}'")
+    
+    # Ensure all required fields exist with defaults
+    required_fields = {
+        "date_value": "",
+        "store_name_value": "",
+        "tax_value": "",
+        "total_value": "",
+        "prod_item_value": [],
+        "prod_quantity_value": [],
+        "prod_price_value": []
+    }
+    
+    for field, default in required_fields.items():
+        if field not in data:
+            data[field] = default
+    
+    # Validate and align array lengths
+    arrays = ['prod_item_value', 'prod_quantity_value', 'prod_price_value']
+    array_lengths = [len(data.get(arr, [])) for arr in arrays]
+    
+    if any(array_lengths):
+        max_len = max(array_lengths)
+        
+        # Pad shorter arrays to match longest array
+        for arr in arrays:
+            current_len = len(data.get(arr, []))
+            if current_len < max_len:
+                if arr == 'prod_item_value':
+                    data[arr].extend([f"Item{i+1}" for i in range(current_len, max_len)])
+                elif arr == 'prod_quantity_value':
+                    data[arr].extend(["1"] * (max_len - current_len))
+                elif arr == 'prod_price_value':
+                    data[arr].extend(["0.00"] * (max_len - current_len))
+        
+        logger.info(f"KV parsing extracted {max_len} product entries")
+    
+    logger.info(f"KV parsing completed with {len([k for k, v in data.items() if v])} non-empty fields")
+    return data
+
+
+def is_valid_extraction(data: Dict[str, Any]) -> bool:
+    """
+    Validate if extraction contains meaningful data.
+    
+    Args:
+        data: Extracted data dictionary
+        
+    Returns:
+        True if extraction has useful data, False otherwise
+    """
+    if not data:
+        return False
+    
+    # Check if we have at least one meaningful scalar field
+    scalar_fields = ['date_value', 'store_name_value', 'tax_value', 'total_value']
+    has_scalar = any(data.get(field, "") for field in scalar_fields)
+    
+    # Check if we have meaningful product data
+    products = data.get('prod_item_value', [])
+    has_products = len(products) > 0 and any(len(str(item).strip()) > 1 for item in products)
+    
+    # Valid if we have either scalar data or product data
+    is_valid = has_scalar or has_products
+    
+    logger.debug(f"Validation result: {is_valid} (scalar: {has_scalar}, products: {has_products})")
+    return is_valid
+
+
+def extract_structured_data(text: str) -> Dict[str, Any]:
+    """
+    Hybrid extraction: try key-value format first, fallback to JSON reconstruction.
+    
+    This is the main entry point for the new robust extraction system.
+    
+    Args:
+        text: Raw model output text
+        
+    Returns:
+        Parsed data dictionary
+    """
+    logger.info("Starting hybrid extraction (KV first, JSON fallback)")
+    
+    # Strategy 1: Try key-value format parsing
+    try:
+        kv_result = parse_kv_format(text)
+        if is_valid_extraction(kv_result):
+            logger.info("✅ Key-value extraction successful")
+            return kv_result
+        else:
+            logger.info("Key-value extraction yielded no meaningful data")
+    except Exception as e:
+        logger.warning(f"Key-value extraction failed: {e}")
+    
+    # Strategy 2: Fallback to JSON reconstruction  
+    logger.info("Falling back to JSON reconstruction")
+    json_result = extract_json_from_text(text)
+    
+    if is_valid_extraction(json_result):
+        logger.info("✅ JSON fallback extraction successful")
+        return json_result
+    else:
+        logger.warning("Both KV and JSON extraction failed to produce meaningful data")
+        return json_result  # Return default structure
+
+
 def extract_json_from_response(
     output: str, extraction_pattern: str = r'{\s*\"(date|store|tax|total|prod).*?}'
 ) -> Dict:

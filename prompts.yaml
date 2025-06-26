@@ -337,3 +337,37 @@ australian_business_receipt_prompt: |
   {"supplier_name":"COSTCO WHOLESALE AUSTRALIA","supplier_abn":"57 104 012 893","payer_name":"","invoice_date":"08/06/2024","gst_amount":"5.35","total_amount":"58.88","payment_method":"MASTERCARD CREDIT","items":["13ULP FUEL"],"quantities":["32.230L"],"item_prices":["58.88"]}
 
   Extract ALL visible information. Return ONLY the JSON object.
+
+# Key-Value format prompt for improved robustness (Phase 1 of robust extraction)
+key_value_receipt_prompt: |
+  <image>
+  Extract information from this Australian receipt and return in KEY-VALUE format.
+  
+  Use this exact format:
+  DATE: [purchase date in DD/MM/YYYY format]
+  STORE: [store name in capitals]
+  TAX: [GST amount]
+  TOTAL: [total amount including GST]
+  PRODUCTS: [item1 | item2 | item3]
+  QUANTITIES: [qty1 | qty2 | qty3]
+  PRICES: [price1 | price2 | price3]
+  
+  Example:
+  DATE: 16/03/2023
+  STORE: WOOLWORTHS
+  TAX: 3.82
+  TOTAL: 42.08
+  PRODUCTS: MILK 2L | BREAD MULTIGRAIN | EGGS FREE RANGE 12PK
+  QUANTITIES: 1 | 2 | 1
+  PRICES: 4.50 | 8.00 | 7.60
+  
+  IMPORTANT RULES:
+  - Use exact format shown above
+  - Extract ALL products from the receipt
+  - Use pipe (|) to separate multiple items
+  - Store names should be in capitals
+  - GST (Goods and Services Tax) is 10% in Australia
+  - Dates must be in DD/MM/YYYY format (Australian standard)
+  - Ensure products, quantities, and prices lists have same length
+  
+  Return ONLY the key-value pairs above. No explanations.
