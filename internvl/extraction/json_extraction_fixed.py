@@ -91,7 +91,7 @@ def _try_parse_with_cleaning(json_text: str) -> Dict[str, Any]:
     
     # Step 3: REMOVED - No pattern reconstruction fallbacks
     # If JSON is malformed, we fail honestly rather than corrupt data
-    logger.error(f"JSON parsing failed completely - malformed syntax from model")
+    logger.error("JSON parsing failed completely - malformed syntax from model")
     
     return None
 
