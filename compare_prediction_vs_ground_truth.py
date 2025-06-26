@@ -10,15 +10,36 @@ from pathlib import Path
 def compare_sample():
     """Compare prediction vs ground truth for the test image."""
     
-    # Load the prediction we just generated
-    pred_file = "output/predictions_synthetic/sample_receipt_001.json"
-    gt_file = "data/synthetic/ground_truth/sample_receipt_001.json"
+    # Check multiple possible prediction locations
+    possible_pred_files = [
+        "output/predictions_synthetic/sample_receipt_001.json",
+        "output/predictions_test/sample_receipt_001.json", 
+        "output/sample_receipt_001.json"
+    ]
     
-    print("Checking if prediction exists...")
-    if not Path(pred_file).exists():
-        print(f"❌ Prediction file not found: {pred_file}")
-        print("Run prediction generation first")
+    pred_file = None
+    for pf in possible_pred_files:
+        if Path(pf).exists():
+            pred_file = pf
+            break
+    
+    if not pred_file:
+        print("❌ Prediction file not found in any of these locations:")
+        for pf in possible_pred_files:
+            print(f"  {pf}")
+        
+        # Show what prediction files exist
+        print("\nAvailable prediction files:")
+        output_dir = Path("output")
+        if output_dir.exists():
+            for pred_dir in output_dir.glob("predictions*"):
+                print(f"  {pred_dir}:")
+                for json_file in pred_dir.glob("*.json")[:3]:
+                    print(f"    {json_file.name}")
         return
+    
+    print(f"Found prediction file: {pred_file}")
+    gt_file = "data/synthetic/ground_truth/sample_receipt_001.json"
     
     print("Checking if ground truth exists...")
     if not Path(gt_file).exists():
