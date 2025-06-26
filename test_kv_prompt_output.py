@@ -3,13 +3,16 @@
 Test what format the model actually outputs with the key-value prompt.
 """
 
-import yaml
 from pathlib import Path
+
+import torch
+import yaml
+
 from internvl.config import load_config
 from internvl.image.loader import get_image_filepaths
 from internvl.model import load_model_and_tokenizer
 from internvl.model.inference import get_raw_prediction
-import torch
+
 
 def test_model_output():
     """Test a single image to see what format the model generates."""
