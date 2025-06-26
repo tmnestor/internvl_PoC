@@ -89,12 +89,9 @@ def _try_parse_with_cleaning(json_text: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         logger.warning(f"JSON parsing failed after ultra-cleaning: {e}")
     
-    # Step 3: Pattern-based reconstruction
-    reconstructed = _reconstruct_from_patterns(json_text)
-    try:
-        return json.loads(reconstructed)
-    except json.JSONDecodeError as e:
-        logger.error(f"Pattern reconstruction failed: {e}")
+    # Step 3: REMOVED - No pattern reconstruction fallbacks
+    # If JSON is malformed, we fail honestly rather than corrupt data
+    logger.error(f"JSON parsing failed completely - malformed syntax from model")
     
     return None
 
@@ -151,14 +148,15 @@ def _reconstruct_from_patterns(malformed_text: str) -> str:
     """
     logger.info("Attempting pattern-based JSON reconstruction")
     
-    # Expected fields for receipt data
+    # Expected fields for SROIE schema (Australian receipts)
     fields = {
-        "company_name": "",
-        "address": "",
-        "phone_number": "",
-        "date": "",
-        "ABN": "",
-        "total_amount": ""
+        "date_value": "",
+        "store_name_value": "",
+        "tax_value": "",
+        "total_value": "",
+        "prod_item_value": [],
+        "prod_quantity_value": [],
+        "prod_price_value": []
     }
     
     # Extract key-value pairs using multiple patterns

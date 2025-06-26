@@ -255,3 +255,20 @@ minimal_sroie_prompt: |
   "prod_quantity_value": [],
   "prod_price_value": []
   }
+
+# Ultra-strict JSON prompt with explicit syntax rules
+ultra_strict_json_prompt: |
+  <image>
+  CRITICAL: Output ONLY valid JSON. No extra text. No explanations.
+  
+  SYNTAX RULES:
+  - Close ALL quotes with "
+  - NO trailing commas 
+  - NO extra newlines in strings
+  - Arrays use ["item1","item2"] format
+  
+  BAD: "Coffee 200g,    GOOD: "Coffee 200g"
+  BAD: "total": "123",  GOOD: "total": "123"
+  
+  OUTPUT FORMAT:
+  {"date_value":"","store_name_value":"","tax_value":"","total_value":"","prod_item_value":[],"prod_quantity_value":[],"prod_price_value":[]}
