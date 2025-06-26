@@ -272,3 +272,32 @@ ultra_strict_json_prompt: |
   
   OUTPUT FORMAT:
   {"date_value":"","store_name_value":"","tax_value":"","total_value":"","prod_item_value":[],"prod_quantity_value":[],"prod_price_value":[]}
+
+# Enhanced JSON prompt with comprehensive error prevention
+enhanced_json_prompt: |
+  <image>
+  EXTRACT receipt data and return ONLY valid JSON. Follow these rules EXACTLY:
+
+  JSON SYNTAX REQUIREMENTS:
+  1. Use double quotes " for ALL strings (never single quotes ')
+  2. NO trailing commas anywhere: {"key":"value"} not {"key":"value",}
+  3. NO line breaks inside string values
+  4. Arrays must be properly formatted: ["item1","item2","item3"]
+  5. Numbers as strings: "12.50" not 12.50
+  6. Empty values: "" for missing strings, [] for missing arrays
+
+  FIELD EXTRACTION RULES:
+  - date_value: Find purchase date in DD/MM/YYYY format
+  - store_name_value: Store name (WOOLWORTHS, COLES, etc.)
+  - tax_value: GST amount (look for GST/TAX line)
+  - total_value: Final total amount
+  - prod_item_value: ALL product names as array
+  - prod_quantity_value: Quantities for each product (same order)
+  - prod_price_value: Prices for each product (same order)
+
+  CRITICAL: Extract ALL products. If you see 5 items, return 5 items in each array.
+
+  EXAMPLE OUTPUT (copy this structure exactly):
+  {"date_value":"16/03/2023","store_name_value":"WOOLWORTHS","tax_value":"3.82","total_value":"42.08","prod_item_value":["MILK 2L","BREAD","EGGS"],"prod_quantity_value":["1","2","1"],"prod_price_value":["4.50","8.00","7.60"]}
+
+  Return ONLY the JSON object. No explanations, no markdown, no extra text.

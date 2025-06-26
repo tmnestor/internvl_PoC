@@ -13,6 +13,15 @@ from internvl.utils import get_logger
 # Get logger for this module
 logger = get_logger(__name__)
 
+try:
+    from .validation import validate_and_fix_json, validate_json_schema
+except ImportError:
+    # Fallback if validation module is not available
+    def validate_and_fix_json(json_obj, **_kwargs):
+        return json_obj, []
+    def validate_json_schema(_json_obj, **_kwargs):
+        return []
+
 
 def extract_json_from_text(text: str) -> Dict[str, Any]:
     """
@@ -78,14 +87,24 @@ def _try_parse_with_cleaning(json_text: str) -> Dict[str, Any]:
     """
     # Step 1: Try parsing as-is
     try:
-        return json.loads(json_text)
+        parsed_json = json.loads(json_text)
+        # Apply validation and fixes
+        fixed_json, fixes = validate_and_fix_json(parsed_json)
+        if fixes:
+            logger.info(f"Applied {len(fixes)} validation fixes: {fixes}")
+        return fixed_json
     except json.JSONDecodeError:
         pass
     
     # Step 2: Ultra-aggressive character sanitization
     cleaned = _ultra_clean_json(json_text)
     try:
-        return json.loads(cleaned)
+        parsed_json = json.loads(cleaned)
+        # Apply validation and fixes
+        fixed_json, fixes = validate_and_fix_json(parsed_json)
+        if fixes:
+            logger.info(f"Applied {len(fixes)} validation fixes after cleaning: {fixes}")
+        return fixed_json
     except json.JSONDecodeError as e:
         logger.warning(f"JSON parsing failed after ultra-cleaning: {e}")
     
