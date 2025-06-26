@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 import dateparser
 
-from internvl.extraction.json_extraction import extract_json_from_text
+from internvl.extraction.json_extraction_fixed import extract_json_from_text
 from internvl.utils import get_logger
 
 # Get logger for this module
