@@ -87,24 +87,14 @@ def _try_parse_with_cleaning(json_text: str) -> Dict[str, Any]:
     """
     # Step 1: Try parsing as-is
     try:
-        parsed_json = json.loads(json_text)
-        # Apply validation and fixes
-        fixed_json, fixes = validate_and_fix_json(parsed_json)
-        if fixes:
-            logger.info(f"Applied {len(fixes)} validation fixes: {fixes}")
-        return fixed_json
+        return json.loads(json_text)
     except json.JSONDecodeError:
         pass
     
     # Step 2: Ultra-aggressive character sanitization
     cleaned = _ultra_clean_json(json_text)
     try:
-        parsed_json = json.loads(cleaned)
-        # Apply validation and fixes
-        fixed_json, fixes = validate_and_fix_json(parsed_json)
-        if fixes:
-            logger.info(f"Applied {len(fixes)} validation fixes after cleaning: {fixes}")
-        return fixed_json
+        return json.loads(cleaned)
     except json.JSONDecodeError as e:
         logger.warning(f"JSON parsing failed after ultra-cleaning: {e}")
     
