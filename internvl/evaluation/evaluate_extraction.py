@@ -309,7 +309,12 @@ def run_evaluation(
                 "date_value", "store_name_value", "tax_value", "total_value",
                 "prod_item_value", "prod_quantity_value", "prod_price_value"
             ]
-            fields_to_use = fields if fields and len(fields) > 0 else default_fields
+            # Convert pandas Index to list if needed
+            if hasattr(fields, 'tolist'):
+                fields_list = fields.tolist()
+            else:
+                fields_list = fields if isinstance(fields, list) else []
+            fields_to_use = fields_list if fields_list and len(fields_list) > 0 else default_fields
             for field in fields_to_use:
                 pred_val = data["prediction"].get(field, "")
                 gt_val = data["ground_truth"].get(field, "")
