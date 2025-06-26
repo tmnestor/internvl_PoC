@@ -125,21 +125,36 @@ def _ultra_clean_json(text: str) -> str:
     
     cleaned = ''.join(cleaned_chars)
     
-    # Step 2: Fix common malformed patterns
+    # Step 2: Fix common malformed patterns specific to model output
+    
+    # Fix missing closing quotes on values: "12.82, -> "12.82",
+    cleaned = re.sub(r'"([^"]*?),\s*\n\s*"([a-z_])', r'"\1",\n"\2', cleaned)
+    cleaned = re.sub(r'"([^"]*?),\s*\n\s*}', r'"\1"\n}', cleaned)
+    cleaned = re.sub(r'"([^"]*?),\s*\n\s*\]', r'"\1"\n]', cleaned)
+    
+    # Fix missing quotes on array items: "Milk 2L, -> "Milk 2L",
+    cleaned = re.sub(r'"([^"]*?),\s*\n\s*"([A-Z])', r'"\1",\n"\2', cleaned)
+    
     # Fix broken quotes: "value\n  " -> "value"
     cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"\s*([,\n}])', r': "\1"\2', cleaned)
     
     # Fix missing quotes after commas
     cleaned = re.sub(r'",\s*\n\s*([a-zA-Z_][^"]*?):', r'",\n  "\1":', cleaned)
     
-    # Fix orphaned commas
-    cleaned = re.sub(r'\n\s*",\s*\n', ',\n', cleaned)
+    # Fix orphaned commas at line ends
+    cleaned = re.sub(r',\s*\n\s*([}\]])', r'\n\1', cleaned)
     
-    # Remove trailing commas
+    # Remove trailing commas before closing brackets
     cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
     
     # Clean up excessive whitespace
     cleaned = re.sub(r' +', ' ', cleaned)
+    
+    # Ensure proper JSON structure completion
+    if cleaned.count('{') > cleaned.count('}'):
+        cleaned += '}'
+    if cleaned.count('[') > cleaned.count(']'):
+        cleaned += ']'
     
     return cleaned
 
