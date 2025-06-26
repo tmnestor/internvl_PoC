@@ -5,6 +5,7 @@ Test the fixed JSON extraction with the problematic cases.
 
 import json
 import logging
+
 from internvl.extraction.json_extraction_fixed import extract_json_from_text
 from internvl.utils.logging import setup_logging
 
