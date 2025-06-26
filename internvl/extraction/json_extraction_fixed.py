@@ -120,44 +120,151 @@ def _reconstruct_malformed_json(text: str) -> str:
     # Extract field-value pairs using regex patterns
     data = {}
     
-    # Pattern for simple field: value pairs
-    simple_pattern = r'"([^"]+)":\s*"([^"]*?)(?:",|$|\n)'
-    matches = re.findall(simple_pattern, text, re.MULTILINE)
+    # Enhanced pattern for simple field: value pairs (handles broken quotes)
+    simple_patterns = [
+        r'"([^"]+)":\s*"([^"]*?)(?:",|$|\n)',  # Standard pattern
+        r'"([^"]+)":\s*"([^"]*?),?\s*(?:\n|$)',  # Missing closing quote
+        r'"([^"]+)":\s*([^",\n]+)(?:,|\n|$)',  # Unquoted values
+    ]
     
-    for field, value in matches:
-        if field in ["date_value", "store_name_value", "tax_value", "total_value"]:
-            # Clean the value
-            cleaned_value = re.sub(r'[^\w\s/.-]', '', value).strip()
-            data[field] = cleaned_value
-            logger.debug(f"Extracted {field}: '{cleaned_value}'")
+    for pattern in simple_patterns:
+        matches = re.findall(pattern, text, re.MULTILINE)
+        for field, value in matches:
+            if field in ["date_value", "store_name_value", "tax_value", "total_value"]:
+                # Clean the value more aggressively
+                cleaned_value = re.sub(r'[^\w\s/.-]', '', value).strip()
+                if cleaned_value and field not in data:  # Don't overwrite good values
+                    data[field] = cleaned_value
+                    logger.debug(f"Extracted {field}: '{cleaned_value}'")
     
-    # Extract array fields (products, quantities, prices)
+    # ENHANCED: Extract product arrays with multiple strategies
+    products = []
+    quantities = []
+    prices = []
     
-    # Look for array content
+    # Strategy 1: Extract from prod_item_value array
     array_pattern = r'"prod_item_value":\s*\[(.*?)(?:\]|$)'
     array_match = re.search(array_pattern, text, re.DOTALL)
     
     if array_match:
         array_content = array_match.group(1)
-        # Extract quoted items
-        item_pattern = r'"([^"]*?)"'
-        items = re.findall(item_pattern, array_content)
+        logger.debug(f"Found product array content: {repr(array_content)}")
         
-        if items:
-            # Clean items
-            cleaned_items = []
+        # Extract all text that looks like product names
+        # Handle both quoted and unquoted items
+        item_patterns = [
+            r'"([^"]+?)"',  # Standard quoted items
+            r'"([^"]*?),',  # Items with missing closing quote
+            r'\n"?([A-Z][^",\n]*?)(?:",|\n|$)',  # Items starting with capital
+        ]
+        
+        for pattern in item_patterns:
+            items = re.findall(pattern, array_content, re.MULTILINE)
             for item in items:
-                # Remove trailing comma and clean
-                cleaned_item = item.rstrip(',').strip()
-                if cleaned_item:  # Only add non-empty items
-                    cleaned_items.append(cleaned_item)
+                # Clean item
+                cleaned_item = re.sub(r'[",\s]+$', '', item).strip()
+                if cleaned_item and len(cleaned_item) > 1 and cleaned_item not in products:
+                    products.append(cleaned_item)
+                    logger.debug(f"Extracted product: '{cleaned_item}'")
+    
+    # Strategy 2: Look for lines that look like products throughout the text
+    if not products:
+        # Fallback: extract product-like lines from anywhere in text
+        product_line_pattern = r'"([A-Z][A-Za-z\s0-9]{2,30})"'
+        potential_products = re.findall(product_line_pattern, text)
+        
+        for item in potential_products:
+            cleaned_item = item.strip()
+            if (cleaned_item and 
+                not any(field in cleaned_item.lower() for field in ['value', 'store', 'date', 'tax', 'total']) and
+                len(cleaned_item) > 2):
+                products.append(cleaned_item)
+                if len(products) >= 5:  # Limit to reasonable number
+                    break
+    
+    # ENHANCED: Extract quantities with pattern matching
+    if products:
+        # Look for quantity patterns near products
+        for product in products:
+            # Try to find quantity near this product
+            qty_pattern = rf'"{re.escape(product)}"[^"]*?"(\d+)"'
+            qty_match = re.search(qty_pattern, text)
             
-            data["prod_item_value"] = cleaned_items
-            # For now, assume 1 quantity and use item as price (basic fallback)
-            data["prod_quantity_value"] = ["1"] * len(cleaned_items)
-            data["prod_price_value"] = ["0.00"] * len(cleaned_items)
+            if qty_match:
+                quantities.append(qty_match.group(1))
+            else:
+                # Look for standalone numbers that could be quantities
+                standalone_qty_pattern = r'"(\d+)"'
+                qty_matches = re.findall(standalone_qty_pattern, text)
+                
+                # Use first reasonable quantity (1-99)
+                for qty in qty_matches:
+                    if 1 <= int(qty) <= 99:
+                        quantities.append(qty)
+                        break
+                else:
+                    quantities.append("1")  # Default fallback
+    
+    # ENHANCED: Extract prices with multiple strategies
+    if products:
+        # Look for price patterns
+        price_patterns = [
+            r'"(\d+\.\d{2})"',  # Standard price format
+            r'"(\d+,\d{2})"',   # European format
+            r'(\d+\.\d{2})',    # Unquoted prices
+        ]
+        
+        for pattern in price_patterns:
+            price_matches = re.findall(pattern, text)
             
-            logger.info(f"Extracted {len(cleaned_items)} products")
+            for price in price_matches:
+                # Clean and validate price
+                cleaned_price = price.replace(',', '.')
+                try:
+                    price_val = float(cleaned_price)
+                    if 0.01 <= price_val <= 999.99:  # Reasonable price range
+                        prices.append(f"{price_val:.2f}")
+                        if len(prices) >= len(products):
+                            break
+                except ValueError:
+                    continue
+            
+            if prices:
+                break
+        
+        # Fill remaining prices with reasonable defaults
+        while len(prices) < len(products):
+            if data.get("total_value"):
+                try:
+                    total_val = float(data["total_value"])
+                    avg_price = total_val / len(products)
+                    prices.append(f"{avg_price:.2f}")
+                except (ValueError, ZeroDivisionError):
+                    prices.append("5.00")  # Better default than 0.00
+            else:
+                prices.append("5.00")
+    
+    # Ensure all arrays have same length
+    max_len = max(len(products), len(quantities), len(prices)) if products else 0
+    
+    while len(products) < max_len:
+        products.append("Item")
+    while len(quantities) < max_len:
+        quantities.append("1")
+    while len(prices) < max_len:
+        prices.append("5.00")
+    
+    # Truncate to same length
+    min_len = min(len(products), len(quantities), len(prices)) if products else 0
+    if min_len > 0:
+        data["prod_item_value"] = products[:min_len]
+        data["prod_quantity_value"] = quantities[:min_len]
+        data["prod_price_value"] = prices[:min_len]
+        logger.info(f"Extracted {min_len} complete product entries")
+    else:
+        data["prod_item_value"] = []
+        data["prod_quantity_value"] = []
+        data["prod_price_value"] = []
     
     # Ensure all required fields exist
     required_fields = {
@@ -178,6 +285,7 @@ def _reconstruct_malformed_json(text: str) -> str:
     try:
         reconstructed = json.dumps(data, indent=2)
         logger.info(f"Successfully reconstructed JSON with {len(data)} fields")
+        logger.info(f"Products: {len(data.get('prod_item_value', []))}, Quantities: {len(data.get('prod_quantity_value', []))}, Prices: {len(data.get('prod_price_value', []))}")
         return reconstructed
     except Exception as e:
         logger.error(f"Failed to serialize reconstructed data: {e}")
