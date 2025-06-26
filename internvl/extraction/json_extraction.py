@@ -88,45 +88,49 @@ def _clean_and_fix_json(json_text: str) -> str:
     # Remove leading/trailing whitespace
     cleaned = json_text.strip()
     
-    # Fix the specific pattern: "value",\n  "next_key" - remove orphaned commas
-    cleaned = re.sub(r'",\s*\n\s*",', '",', cleaned)
+    # CRITICAL: Remove actual control characters that cause "Invalid control character" errors
+    # Replace actual newlines with \n in the text first
+    import string
+    printable = set(string.printable)
+    cleaned = ''.join(c if c in printable else ' ' for c in cleaned)
     
-    # Fix orphaned commas on their own lines
-    cleaned = re.sub(r'",\s*\n\s*,\s*\n', '",\n', cleaned)
+    # Fix the orphaned comma pattern specifically: ",\n  ",
+    cleaned = re.sub(r'",\s*\n\s*",\s*\n', '",\n', cleaned)
+    
+    # Fix orphaned commas on their own lines (very common in this model's output)
+    cleaned = re.sub(r'\n\s*",\s*\n', ',\n', cleaned)
     
     # Fix lines that are just commas with whitespace
     cleaned = re.sub(r'\n\s*,\s*\n', '\n', cleaned)
     
-    # Fix unclosed quotes at end of values (very common pattern)
-    # Pattern: "key": "value\n" should be "key": "value",
-    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"', r': "\1"', cleaned)
+    # Fix pattern: "value"\n  " (unclosed quote with newline)
+    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"\s*,?\s*\n', r': "\1",\n', cleaned)
     
-    # Fix missing commas between key-value pairs
-    # Pattern: "value"\n  "next_key": becomes "value",\n  "next_key":
+    # Fix unclosed quotes at end of JSON values (before closing brace)
+    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*"\s*\n\s*}', r': "\1"\n}', cleaned)
+    
+    # Fix missing commas between fields - improved pattern
     cleaned = re.sub(r'"\s*\n\s*"([^"]+)":', r'",\n  "\1":', cleaned)
     
-    # Fix missing commas between numeric values and next key
-    # Pattern: 123\n  "next_key": becomes 123,\n  "next_key":
-    cleaned = re.sub(r'(\d+)\s*\n\s*"([^"]+)":', r'\1,\n  "\2":', cleaned)
+    # Fix missing commas between numeric/string values and next key
+    cleaned = re.sub(r'(\d+|\w+)\s*\n\s*"([^"]+)":', r'\1,\n  "\2":', cleaned)
     
-    # Fix unescaped newlines in string values
-    def fix_newlines_in_strings(match):
-        content = match.group(1)
-        content = content.replace('\n', '\\n')
-        return f'"{content}"'
+    # Fix unescaped actual newlines in quoted strings
+    def fix_newlines_in_quoted_strings(match):
+        key = match.group(1)
+        value = match.group(2)
+        # Replace actual newlines with \n
+        value = value.replace('\n', '\\n').replace('\r', '\\r')
+        return f'"{key}": "{value}"'
     
-    # Apply newline fixing to quoted strings that span multiple lines
-    cleaned = re.sub(r'"([^"]*\n[^"]*)"', fix_newlines_in_strings, cleaned)
+    # Apply to quoted string values that contain actual newlines
+    cleaned = re.sub(r'"([^"]+)":\s*"([^"]*\n[^"]*)"', fix_newlines_in_quoted_strings, cleaned)
     
-    # Fix pattern where address has multiple lines with extra quotes
-    # "address": "Line1\n             Line2\n             Line3",
-    cleaned = re.sub(r'"([^"]*?)"\s*\n\s*([^",\n}]+?)\s*\n\s*([^",\n}]+?)"', 
-                    lambda m: f'"{m.group(1)}\\n{m.group(2).strip()}\\n{m.group(3).strip()}"', 
+    # Fix addresses with multiple unquoted lines
+    # Pattern: "address": "Line1\n             Line2",
+    cleaned = re.sub(r'("address":\s*"[^"]*?)\n\s*([^",\n}]+?)\n\s*([^",\n}]+?)"', 
+                    lambda m: f'{m.group(1)}\\n{m.group(2).strip()}\\n{m.group(3).strip()}"', 
                     cleaned)
-    
-    # Fix missing quotes around multi-line values
-    # Pattern: "key": value1\n             value2",
-    cleaned = re.sub(r':\s*([^",\n{]+?)\s*\n\s*([^",\n}]+?)"', r': "\1\\n\2"', cleaned)
     
     # Fix single quotes to double quotes
     cleaned = cleaned.replace("'", '"')
@@ -136,10 +140,6 @@ def _clean_and_fix_json(json_text: str) -> str:
     
     # Remove trailing commas before closing braces
     cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
-    
-    # Final cleanup - fix any remaining unclosed quotes at the end
-    # Pattern: "total_amount": "88.06\n}
-    cleaned = re.sub(r':\s*"([^"]*?)\s*\n\s*}', r': "\1"\n}', cleaned)
     
     # Last resort: try to salvage severely malformed JSON by reconstructing it
     if not _is_valid_json_structure(cleaned):
@@ -164,31 +164,93 @@ def _reconstruct_json(malformed_json: str) -> str:
     """
     logger.info("Attempting JSON reconstruction as last resort")
     
-    # Extract potential key-value pairs using regex
+    # Initialize with expected fields for receipt extraction
+    expected_fields = {
+        "company_name": "",
+        "address": "",
+        "phone_number": "",
+        "date": "",
+        "ABN": "",
+        "total_amount": ""
+    }
+    
+    # More aggressive pattern matching for key-value extraction
+    # Look for various patterns that might represent key-value pairs
+    patterns = [
+        r'"([^"]+)"\s*:\s*"([^"]*)"',  # "key": "value"
+        r'"([^"]+)"\s*:\s*([^,\n}]+)',  # "key": value
+        r'([a-zA-Z_]+)\s*:\s*"([^"]*)"',  # key: "value"
+        r'([a-zA-Z_]+)\s*:\s*([^,\n}]+)',  # key: value
+    ]
+    
+    extracted_pairs = {}
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, malformed_json)
+        for key, value in matches:
+            # Clean the key
+            key = key.strip().lower().replace(' ', '_')
+            
+            # Map common variations to standard field names
+            key_mappings = {
+                'company': 'company_name',
+                'store': 'company_name',
+                'business': 'company_name',
+                'phone': 'phone_number',
+                'tel': 'phone_number',
+                'telephone': 'phone_number',
+                'total': 'total_amount',
+                'amount': 'total_amount',
+                'price': 'total_amount',
+            }
+            
+            # Apply key mapping
+            for variant, standard in key_mappings.items():
+                if variant in key:
+                    key = standard
+                    break
+            
+            # Clean the value
+            value = value.strip()
+            
+            # Remove trailing quotes, newlines, and extra whitespace
+            value = re.sub(r'["\']\s*$', '', value)
+            value = re.sub(r'\s*\n.*$', '', value, flags=re.DOTALL)
+            value = value.strip()
+            
+            # Only keep non-empty values and valid field names
+            if value and key in expected_fields:
+                extracted_pairs[key] = value
+    
+    # Build the reconstructed JSON
     reconstructed = "{\n"
+    pairs_added = 0
     
-    # Look for patterns like: "key": "value" or "key": value
-    pairs = re.findall(r'"([^"]+)"\s*:\s*([^,\n}]+)', malformed_json)
-    
-    for i, (key, value) in enumerate(pairs):
-        # Clean the value
-        value = value.strip()
-        
-        # Remove trailing quotes and newlines
-        value = re.sub(r'["\']\s*$', '', value)
-        value = re.sub(r'\s*\n.*$', '', value, flags=re.DOTALL)
-        
-        # Add quotes around string values if they don't have them
-        if not (value.startswith('"') or value.replace('.', '').isdigit()):
-            value = f'"{value}"'
-        
-        # Add the pair
-        comma = "," if i < len(pairs) - 1 else ""
-        reconstructed += f'  "{key}": {value}{comma}\n'
+    for field in expected_fields:
+        if field in extracted_pairs:
+            value = extracted_pairs[field]
+            
+            # Format the value appropriately
+            if value.replace('.', '').replace('$', '').replace(',', '').isdigit():
+                # Numeric value - remove quotes and currency symbols
+                value = value.replace('$', '').replace(',', '')
+                if '.' in value:
+                    value = str(float(value))
+                else:
+                    value = str(int(value))
+            else:
+                # String value - ensure it's quoted and escape newlines
+                value = value.replace('\n', '\\n').replace('\r', '\\r')
+                if not value.startswith('"'):
+                    value = f'"{value}"'
+            
+            comma = "," if pairs_added < len(extracted_pairs) - 1 else ""
+            reconstructed += f'  "{field}": {value}{comma}\n'
+            pairs_added += 1
     
     reconstructed += "}"
     
-    logger.debug(f"Reconstructed JSON:\n{reconstructed}")
+    logger.debug(f"Reconstructed JSON with {pairs_added} fields:\n{reconstructed}")
     return reconstructed
 
 
