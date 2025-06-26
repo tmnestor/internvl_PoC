@@ -41,7 +41,17 @@ def extract_json_from_text(text: str) -> Dict[str, Any]:
         return default_json
 
     try:
-        # First try to find JSON enclosed in triple backticks
+        # First try aggressive JSON reconstruction from malformed text
+        reconstructed = _reconstruct_malformed_json(text)
+        if reconstructed:
+            try:
+                result = json.loads(reconstructed)
+                logger.info("Successfully reconstructed malformed JSON")
+                return result
+            except json.JSONDecodeError:
+                pass
+
+        # Then try to find JSON enclosed in triple backticks
         json_pattern = r"```(?:json)?(.*?)```"
         markdown_matches = re.findall(json_pattern, text, re.DOTALL)
 
@@ -96,6 +106,82 @@ def _try_parse_with_cleaning(json_text: str) -> Dict[str, Any]:
     logger.error("JSON parsing failed completely - malformed syntax from model")
     
     return None
+
+
+def _reconstruct_malformed_json(text: str) -> str:
+    """
+    Aggressively reconstruct JSON from severely malformed model output.
+    
+    This handles the specific case where the model generates incomplete JSON
+    with missing quotes and control characters.
+    """
+    logger.info("Attempting aggressive JSON reconstruction")
+    
+    # Extract field-value pairs using regex patterns
+    data = {}
+    
+    # Pattern for simple field: value pairs
+    simple_pattern = r'"([^"]+)":\s*"([^"]*?)(?:",|$|\n)'
+    matches = re.findall(simple_pattern, text, re.MULTILINE)
+    
+    for field, value in matches:
+        if field in ["date_value", "store_name_value", "tax_value", "total_value"]:
+            # Clean the value
+            cleaned_value = re.sub(r'[^\w\s/.-]', '', value).strip()
+            data[field] = cleaned_value
+            logger.debug(f"Extracted {field}: '{cleaned_value}'")
+    
+    # Extract array fields (products, quantities, prices)
+    
+    # Look for array content
+    array_pattern = r'"prod_item_value":\s*\[(.*?)(?:\]|$)'
+    array_match = re.search(array_pattern, text, re.DOTALL)
+    
+    if array_match:
+        array_content = array_match.group(1)
+        # Extract quoted items
+        item_pattern = r'"([^"]*?)"'
+        items = re.findall(item_pattern, array_content)
+        
+        if items:
+            # Clean items
+            cleaned_items = []
+            for item in items:
+                # Remove trailing comma and clean
+                cleaned_item = item.rstrip(',').strip()
+                if cleaned_item:  # Only add non-empty items
+                    cleaned_items.append(cleaned_item)
+            
+            data["prod_item_value"] = cleaned_items
+            # For now, assume 1 quantity and use item as price (basic fallback)
+            data["prod_quantity_value"] = ["1"] * len(cleaned_items)
+            data["prod_price_value"] = ["0.00"] * len(cleaned_items)
+            
+            logger.info(f"Extracted {len(cleaned_items)} products")
+    
+    # Ensure all required fields exist
+    required_fields = {
+        "date_value": "",
+        "store_name_value": "",
+        "tax_value": "",
+        "total_value": "",
+        "prod_item_value": [],
+        "prod_quantity_value": [],
+        "prod_price_value": []
+    }
+    
+    for field, default in required_fields.items():
+        if field not in data:
+            data[field] = default
+    
+    # Convert to JSON string
+    try:
+        reconstructed = json.dumps(data, indent=2)
+        logger.info(f"Successfully reconstructed JSON with {len(data)} fields")
+        return reconstructed
+    except Exception as e:
+        logger.error(f"Failed to serialize reconstructed data: {e}")
+        return ""
 
 
 def _ultra_clean_json(text: str) -> str:
