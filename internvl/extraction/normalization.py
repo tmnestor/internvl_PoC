@@ -7,8 +7,6 @@ This module provides functions for normalizing field values extracted from model
 import re
 from typing import Any, Dict
 
-import dateparser
-
 from internvl.extraction.json_extraction_fixed import extract_json_from_text
 from internvl.utils import get_logger
 
@@ -29,31 +27,24 @@ def normalize_date(date_str: str) -> str:
         Normalized date string in DD/MM/YYYY format or original if parsing fails
     """
     try:
-        # Remove any 'time' component if it exists (separated by space)
-        if " " in date_str and not any(
-            x in date_str.lower()
-            for x in [
-                "jan",
-                "feb",
-                "mar",
-                "apr",
-                "may",
-                "jun",
-                "jul",
-                "aug",
-                "sep",
-                "oct",
-                "nov",
-                "dec",
-            ]
-        ):
+        if not date_str:
+            return ""
+        
+        # Remove any time component
+        if " " in date_str:
             date_str = date_str.split(" ")[0]
-
-        # Parse the date
-        parsed_date = dateparser.parse(date_str)
-        if parsed_date:
-            # Format to DD/MM/YYYY
-            return parsed_date.strftime("%d/%m/%Y")
+        
+        # Try to match DD/MM/YYYY pattern
+        date_pattern = r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})'
+        match = re.match(date_pattern, date_str.strip())
+        
+        if match:
+            day, month, year = match.groups()
+            # Ensure 2-digit day and month
+            day = day.zfill(2)
+            month = month.zfill(2)
+            return f"{day}/{month}/{year}"
+        
         return date_str
     except Exception as e:
         logger.error(f"Error normalizing date '{date_str}': {e}")

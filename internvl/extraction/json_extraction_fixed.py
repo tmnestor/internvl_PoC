@@ -13,14 +13,7 @@ from internvl.utils import get_logger
 # Get logger for this module
 logger = get_logger(__name__)
 
-try:
-    from .validation import validate_and_fix_json, validate_json_schema
-except ImportError:
-    # Fallback if validation module is not available
-    def validate_and_fix_json(json_obj, **_kwargs):
-        return json_obj, []
-    def validate_json_schema(_json_obj, **_kwargs):
-        return []
+# Validation imports removed for emergency restore
 
 
 def extract_json_from_text(text: str) -> Dict[str, Any]:
