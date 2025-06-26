@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Tuple
 import dateparser
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 
+from internvl.evaluation.schema_converter import ensure_sroie_schema
 from internvl.utils import get_logger
 
 # Get logger for this module
@@ -612,6 +613,9 @@ def calculate_field_metrics(
         try:
             with pred_file.open("r", encoding="utf-8") as f:
                 prediction = json.load(f)
+
+            # Convert prediction to SROIE schema if needed
+            prediction = ensure_sroie_schema(prediction)
 
             # Format results for evaluation
             image_id = pred_file.stem

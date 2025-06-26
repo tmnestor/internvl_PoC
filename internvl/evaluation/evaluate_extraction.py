@@ -18,6 +18,7 @@ import pandas as pd
 # This is the correct import path when running as a module
 from internvl.config.config import load_config
 from internvl.evaluation.metrics import calculate_field_metrics
+from internvl.evaluation.schema_converter import detect_schema_type, ensure_sroie_schema
 from internvl.utils.logging import get_logger, setup_logging
 from internvl.utils.path import PathManager
 
@@ -122,6 +123,13 @@ def run_evaluation(
             try:
                 with pred_file.open("r", encoding="utf-8") as f:
                     prediction = json.load(f)
+                
+                # Convert prediction to SROIE schema if needed
+                original_schema = detect_schema_type(prediction)
+                prediction = ensure_sroie_schema(prediction)
+                if original_schema != "sroie":
+                    logger.info(f"Converted prediction from {original_schema} to SROIE schema")
+                
                 logger.info(f"PREDICTION ({pred_file}):")
                 logger.info(json.dumps(prediction, indent=2))
             except Exception as e:
@@ -157,6 +165,9 @@ def run_evaluation(
                 if pred_file.exists() and gt_file.exists():
                     with pred_file.open("r", encoding="utf-8") as f:
                         prediction = json.load(f)
+                    # Convert prediction to SROIE schema if needed
+                    prediction = ensure_sroie_schema(prediction)
+                    
                     with gt_file.open("r", encoding="utf-8") as f:
                         ground_truth = json.load(f)
 
@@ -298,7 +309,8 @@ def run_evaluation(
                 "date_value", "store_name_value", "tax_value", "total_value",
                 "prod_item_value", "prod_quantity_value", "prod_price_value"
             ]
-            for field in fields or default_fields:
+            fields_to_use = fields if fields is not None and len(fields) > 0 else default_fields
+            for field in fields_to_use:
                 pred_val = data["prediction"].get(field, "")
                 gt_val = data["ground_truth"].get(field, "")
 
