@@ -29,17 +29,17 @@ logger = get_logger(__name__)
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Evaluate extraction results against ground truth."
+        description="Evaluate Australian receipt extraction results against ground truth. Defaults to synthetic Australian data."
     )
 
     parser.add_argument(
-        "--predictions-dir", help="Directory containing model predictions", type=str
+        "--predictions-dir", help="Directory containing model predictions (default: output/predictions_synthetic)", type=str
     )
     parser.add_argument(
-        "--ground-truth-dir", help="Directory containing ground truth files", type=str
+        "--ground-truth-dir", help="Directory containing ground truth files (default: data/synthetic/ground_truth)", type=str
     )
     parser.add_argument(
-        "--output-path", help="Path to save evaluation results", type=str
+        "--output-path", help="Path to save evaluation results (default: output/evaluation_results)", type=str
     )
     parser.add_argument(
         "--fields",
@@ -438,7 +438,7 @@ def main():
     predictions_dir = (
         Path(args.predictions_dir)
         if args.predictions_dir
-        else path_manager.get_output_path("predictions_test")
+        else path_manager.get_output_path("predictions_synthetic")
     )
     ground_truth_dir = (
         Path(args.ground_truth_dir)
