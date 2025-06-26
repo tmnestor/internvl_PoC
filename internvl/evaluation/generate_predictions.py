@@ -17,9 +17,7 @@ import torch
 # Import from the src directory structure
 # This is the correct import path when running as a module
 from internvl.config import load_config, setup_argparse
-from internvl.extraction.normalization import (
-    post_process_with_retry,
-)
+from internvl.extraction.normalization import post_process_prediction
 from internvl.image.loader import get_image_filepaths
 from internvl.model import load_model_and_tokenizer
 from internvl.model.inference import get_raw_prediction
@@ -148,39 +146,8 @@ def main() -> int:
                     device=device,
                 )
 
-                # Create retry callback for confidence scoring
-                def retry_callback(retry_image_path, fallback_prompt_name):
-                    # Load fallback prompt
-                    try:
-                        import yaml
-                        prompts_path = config.get("prompts_path")
-                        if prompts_path and Path(prompts_path).exists():
-                            with Path(prompts_path).open("r") as f:
-                                prompts = yaml.safe_load(f)
-                            fallback_prompt = prompts.get(fallback_prompt_name, prompt)
-                        else:
-                            fallback_prompt = prompt
-                    except Exception:
-                        fallback_prompt = prompt
-                    
-                    return get_raw_prediction(
-                        image_path=retry_image_path,
-                        model=model,
-                        tokenizer=tokenizer,
-                        prompt=fallback_prompt,
-                        generation_config=generation_config,
-                        device=device,
-                    )
-
-                # Process with confidence scoring and retry
-                processed_json, was_retried = post_process_with_retry(
-                    raw_output, 
-                    str(image_path),
-                    retry_callback
-                )
-                
-                if was_retried:
-                    logger.info(f"Prediction improved through retry for {image_id}")
+                # Process and normalize
+                processed_json = post_process_prediction(raw_output)
 
                 # Save prediction
                 output_file = output_dir / f"{image_id}.json"
