@@ -115,7 +115,7 @@ conda activate internvl_env
 4. **Validation**:
    ```bash
    # Add a validation script to test that all core functionality works
-   python -m src.scripts.utils.verify_env
+   python -m scripts.utils.verify_env
    ```
 
 ## Troubleshooting
@@ -156,7 +156,7 @@ conda env create -f internvl_env.yml --prefix /efs/shared/.conda/envs/internvl_e
 chmod -R 755 /efs/shared/.conda/envs/internvl_env
 
 # Create a validation script that users can run
-echo "python -m src.scripts.utils.verify_env" > /efs/shared/.conda/envs/validate_internvl.sh
+echo "python -m scripts.utils.verify_env" > /efs/shared/.conda/envs/validate_internvl.sh
 chmod +x /efs/shared/.conda/envs/validate_internvl.sh
 ```
 

@@ -17,8 +17,8 @@ To generate basic synthetic receipts for testing:
 # Activate the conda environment
 conda activate internvl_env
 
-# Use Python module execution
-PYTHONPATH=$PWD python3 -m src.internvl.data.generators.simple_receipt_generator --num_receipts 20 --include_gst
+# Use Python module execution (note: generators are standalone scripts, not modules)
+python3 simple_receipt_generator.py --num_receipts 20 --include_gst
 
 # Or use the run.sh helper script (if implemented)
 ./run.sh generate-data --type simple --num_receipts 20 --include_gst
@@ -32,8 +32,8 @@ To generate more visually diverse and realistic receipts:
 # Activate the conda environment
 conda activate internvl_env
 
-# Use Python module execution
-python -m src.internvl.data.generators.receipt_generator --num_receipts 20 --image_size 2048
+# Use Python module execution (note: generators are standalone scripts, not modules)
+python receipt_generator.py --num_receipts 20 --image_size 2048
 
 # Or use the run.sh helper script (if implemented)
 ./run.sh generate-data --type advanced --num_receipts 20 --image_size 2048

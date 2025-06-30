@@ -19,13 +19,13 @@ To ensure consistent behavior across different environments, all scripts should 
 pattern:
 
 ```bash
-python -m src.scripts.script_name [args]
+python -m internvl.module.script_name [args]
 ```
 
 Instead of:
 
 ```bash
-python src/scripts/script_name.py [args]
+python internvl/module/script_name.py [args]
 ```
 
 This ensures that imports work correctly regardless of the current working directory.
@@ -41,7 +41,7 @@ INTERNVL_PROJECT_ROOT=.
 # Base paths (all relative to project root)
 INTERNVL_DATA_PATH=data
 INTERNVL_OUTPUT_PATH=output
-INTERNVL_SOURCE_PATH=src
+INTERNVL_SOURCE_PATH=internvl
 INTERNVL_PROMPTS_PATH=prompts.yaml
 ```
 
@@ -73,7 +73,7 @@ def internvl_component(image_path, output_path):
     
     # Run using module invocation pattern
     cmd = [
-        "python", "-m", "src.scripts.internvl_single",
+        "python", "-m", "internvl.cli.internvl_single",
         "--image", image_path,
         "--output", output_path
     ]
@@ -91,5 +91,5 @@ Paths are resolved using the following rules:
 
 ## Template Script
 
-See `src/scripts/module_template.py` for a template script that demonstrates the module invocation pattern
+See `internvl/utils/dev_tools/module_template.py` for a template script that demonstrates the module invocation pattern
 and path resolution.
