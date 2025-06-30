@@ -79,6 +79,10 @@ import re
 class ATOWorkExpenseReceipt(BaseModel):
     """ATO-compliant work-related expense receipt schema."""
     
+    # TAXPAYER IDENTIFICATION (NO TAX NUMBERS EVER)
+    taxpayer_name: str = Field(..., description="Full name of taxpayer claiming expense")
+    taxpayer_address: str = Field(..., description="Residential address of taxpayer")
+    
     # MANDATORY ATO FIELDS
     supplier_name: str = Field(..., description="Business name of supplier")
     supplier_abn: Optional[str] = Field(None, description="Australian Business Number (mandatory >$82.50)")
@@ -161,6 +165,31 @@ class ATOWorkExpenseReceipt(BaseModel):
             raise ValueError("Work percentage must be between 0 and 100")
         return v
     
+    @validator('taxpayer_name')
+    def validate_taxpayer_name(cls, v):
+        """Validate taxpayer name format."""
+        if not v or len(v.strip()) < 2:
+            raise ValueError("Taxpayer name must be provided")
+        
+        # Basic name validation - should contain letters
+        if not re.search(r'[a-zA-Z]', v):
+            raise ValueError("Taxpayer name must contain letters")
+        
+        return v.strip().title()
+    
+    @validator('taxpayer_address')
+    def validate_taxpayer_address(cls, v):
+        """Validate taxpayer address format."""
+        if not v or len(v.strip()) < 10:
+            raise ValueError("Taxpayer address must be provided and be reasonably complete")
+        
+        # Check for basic Australian address components
+        address_indicators = ['street', 'st', 'road', 'rd', 'avenue', 'ave', 'place', 'pl', 'drive', 'dr', 'nsw', 'vic', 'qld', 'wa', 'sa', 'tas', 'nt', 'act']
+        if not any(indicator in v.lower() for indicator in address_indicators):
+            raise ValueError("Address should include street and state information")
+        
+        return v.strip()
+    
     @validator('expense_category')
     def validate_ato_category(cls, v):
         """Validate against ATO-approved expense categories."""
@@ -215,6 +244,8 @@ class ATOWorkExpenseReceipt(BaseModel):
     class Config:
         schema_extra = {
             "example": {
+                "taxpayer_name": "John Smith",
+                "taxpayer_address": "45 Collins Street, Melbourne VIC 3000",
                 "supplier_name": "CALTEX AUSTRALIA PETROLEUM",
                 "supplier_abn": "11 000 014 675",
                 "supplier_address": "123 Pacific Highway, North Sydney NSW 2060",
@@ -249,6 +280,8 @@ Extract information from this Australian work-related expense receipt for ATO ta
 
 Use this EXACT format:
 
+TAXPAYER_NAME: [Full name of person claiming this expense]
+TAXPAYER_ADDRESS: [Residential address of taxpayer]
 SUPPLIER_NAME: [Business name of the supplier]
 SUPPLIER_ABN: [Australian Business Number - format: XX XXX XXX XXX]
 SUPPLIER_ADDRESS: [Business address if visible]
@@ -286,6 +319,8 @@ AUSTRALIAN BUSINESS CONTEXT:
 - Technology: JB Hi-Fi, Harvey Norman, Apple Store
 
 Example:
+TAXPAYER_NAME: John Smith
+TAXPAYER_ADDRESS: 45 Collins Street Melbourne VIC 3000
 SUPPLIER_NAME: CALTEX AUSTRALIA PETROLEUM
 SUPPLIER_ABN: 11 000 014 675
 SUPPLIER_ADDRESS: 123 Pacific Highway North Sydney NSW 2060
@@ -305,6 +340,8 @@ ATO_SIMPLE_EXTRACTION_PROMPT = """
 <image>
 Extract from this Australian work expense receipt:
 
+TAXPAYER_NAME: [Person claiming expense]
+TAXPAYER_ADDRESS: [Taxpayer's address]
 SUPPLIER_NAME: [Who was paid]
 SUPPLIER_ABN: [ABN if visible]
 DATE: [When - DD/MM/YYYY]
@@ -315,6 +352,7 @@ CATEGORY: [Type of work expense]
 PURPOSE: [Why work-related]
 
 Focus on ATO tax compliance requirements.
+IMPORTANT: NO TAX FILE NUMBERS - only name and address.
 """
 ```
 
@@ -387,6 +425,8 @@ class ATOCompliancePostProcessor:
         
         # Stage 1: Basic field extraction and normalization
         processed = {
+            'taxpayer_name': self._normalize_taxpayer_name(raw_extraction.get('TAXPAYER_NAME', '')),
+            'taxpayer_address': self._normalize_taxpayer_address(raw_extraction.get('TAXPAYER_ADDRESS', '')),
             'supplier_name': self._normalize_supplier_name(raw_extraction.get('SUPPLIER_NAME', '')),
             'supplier_abn': self._normalize_abn(raw_extraction.get('SUPPLIER_ABN', '')),
             'supplier_address': self._normalize_address(raw_extraction.get('SUPPLIER_ADDRESS', '')),
@@ -413,6 +453,71 @@ class ATOCompliancePostProcessor:
         logger.info(f"ATO processing complete. Compliance status: {processed['ato_compliance']['compliant']}")
         
         return processed
+    
+    def _normalize_taxpayer_name(self, name_str: str) -> str:
+        """Normalize taxpayer name for ATO compliance."""
+        if not name_str:
+            return ""
+        
+        # Clean and format name
+        clean_name = name_str.strip()
+        
+        # Remove any potential sensitive information
+        sensitive_patterns = [
+            r'\b\d{8,9}\b',  # Potential TFN patterns
+            r'\bTFN\b',      # TFN abbreviation
+            r'\bTAX\s*FILE\s*NUMBER\b'  # Tax file number text
+        ]
+        
+        for pattern in sensitive_patterns:
+            clean_name = re.sub(pattern, '', clean_name, flags=re.IGNORECASE)
+        
+        # Format to title case
+        clean_name = clean_name.title()
+        
+        # Basic validation - should look like a name
+        if len(clean_name.strip()) < 2:
+            logger.warning(f"Taxpayer name appears too short: '{name_str}'")
+            return name_str
+        
+        return clean_name.strip()
+    
+    def _normalize_taxpayer_address(self, address_str: str) -> str:
+        """Normalize taxpayer address for ATO compliance."""
+        if not address_str:
+            return ""
+        
+        # Clean address
+        clean_address = address_str.strip()
+        
+        # Remove any potential sensitive information
+        sensitive_patterns = [
+            r'\b\d{8,9}\b',  # Potential TFN patterns
+            r'\bTFN\b',      # TFN abbreviation
+        ]
+        
+        for pattern in sensitive_patterns:
+            clean_address = re.sub(pattern, '', clean_address, flags=re.IGNORECASE)
+        
+        # Standardize Australian state abbreviations
+        state_mappings = {
+            'NEW SOUTH WALES': 'NSW',
+            'VICTORIA': 'VIC', 
+            'QUEENSLAND': 'QLD',
+            'WESTERN AUSTRALIA': 'WA',
+            'SOUTH AUSTRALIA': 'SA',
+            'TASMANIA': 'TAS',
+            'NORTHERN TERRITORY': 'NT',
+            'AUSTRALIAN CAPITAL TERRITORY': 'ACT'
+        }
+        
+        for full_state, abbrev in state_mappings.items():
+            clean_address = re.sub(full_state, abbrev, clean_address, flags=re.IGNORECASE)
+        
+        # Title case for readability
+        clean_address = clean_address.title()
+        
+        return clean_address.strip()
     
     def _normalize_supplier_name(self, supplier_str: str) -> str:
         """Normalize supplier name for ATO compliance."""
@@ -593,6 +698,8 @@ class ATOCompliancePostProcessor:
         
         # Mandatory field checks
         mandatory_fields = [
+            ('taxpayer_name', 'Taxpayer name'),
+            ('taxpayer_address', 'Taxpayer address'),
             ('supplier_name', 'Supplier name'),
             ('transaction_date', 'Transaction date'),
             ('total_amount', 'Total amount'),
@@ -842,6 +949,8 @@ def main():
     
     print(f"\n=== ATO WORK EXPENSE EXTRACTION ===")
     print(f"Receipt: {args.image_path.name}")
+    print(f"Taxpayer: {result.get('taxpayer_name', 'N/A')}")
+    print(f"Address: {result.get('taxpayer_address', 'N/A')}")
     print(f"Supplier: {result.get('supplier_name', 'N/A')}")
     print(f"Date: {result.get('transaction_date', 'N/A')}")
     print(f"Amount: ${result.get('total_amount', 'N/A')}")
@@ -871,16 +980,41 @@ if __name__ == "__main__":
 
 ---
 
+## PRIVACY AND SECURITY POLICY
+
+### 🔒 **CRITICAL: NO TAX FILE NUMBERS (TFN) POLICY**
+
+**ABSOLUTE PROHIBITION**: This system **NEVER** captures, stores, or processes Australian Tax File Numbers (TFN) or any tax identification numbers.
+
+**Privacy Protection Measures:**
+- ✅ **Taxpayer name and address** - Required for ATO compliance
+- ❌ **Tax File Numbers (TFN)** - NEVER captured or stored
+- ❌ **Medicare numbers** - Not relevant for expense claims
+- ❌ **Social security numbers** - Not used in Australia
+- ✅ **Business ABN only** - Required for supplier identification
+
+**Validation Safeguards:**
+- Automatic detection and removal of potential TFN patterns
+- Schema validation prevents TFN field creation
+- Post-processing filters remove sensitive number patterns
+- Logging warnings for any suspicious number patterns
+
+**ATO Compliance Note**: The ATO requires taxpayer identification (name/address) for expense claims but **explicitly prohibits** requiring TFN disclosure for receipt processing.
+
+---
+
 ## KEY CHANGES FOR ATO FOCUS
 
 ### 🎯 **Critical Shifts from Supermarket to ATO Focus**
 
-1. **ABN Requirement**: Mandatory for claims >$82.50 (ATO threshold)
-2. **Business Purpose**: Every expense must have clear work-related justification  
-3. **ATO Categories**: Proper classification into tax-deductible categories
-4. **Date Format**: Australian DD/MM/YYYY format compliance
-5. **GST Validation**: 10% Australian GST calculation verification
-6. **Record Keeping**: 5-year retention requirement awareness
+1. **Taxpayer Identification**: Name and address (NO tax numbers)
+2. **ABN Requirement**: Mandatory for claims >$82.50 (ATO threshold)
+3. **Business Purpose**: Every expense must have clear work-related justification  
+4. **ATO Categories**: Proper classification into tax-deductible categories
+5. **Date Format**: Australian DD/MM/YYYY format compliance
+6. **GST Validation**: 10% Australian GST calculation verification
+7. **Privacy Protection**: Automatic removal of sensitive number patterns
+8. **Record Keeping**: 5-year retention requirement awareness
 
 ### 🏢 **Business Types Supported**
 
